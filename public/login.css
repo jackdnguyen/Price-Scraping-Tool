@@ -2,23 +2,30 @@
   margin-left: auto;
   margin-right: auto;
   margin-top: 200px;
-  width: 25%;
+  width: 17.5%;
   padding: 10px;
-  background-color: rgb(165, 230, 230);
+
+  text-align: center;
 }
 .inputname {
   width: 300px;
   padding: 10px;
 }
 .loginlabel {
+  margin-bottom: 30px;
+  text-align: center;
+
   font-size: large;
   padding: 10px;
 }
 .inputlabel {
-  text-align: center;
+  margin-top: 20px;
+  float: left;
   font-size: medium;
 }
 .inputsubmit {
+  margin-top: 20px;
+
   text-align: center;
   padding: 10px;
   float: right;
