@@ -1,0 +1,82 @@
+#button {
+    border-style: solid;
+    border-width: 2px;
+    border-color: black;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    margin-top: -0.5rem;
+    font-size: 0;
+
+}
+
+#url {
+    font-size: 35px;
+    padding: 20px;
+}
+
+#scrapedData {
+    font-size: 35px;
+    padding: 20px;
+}
+
+#price {
+    margin: 125px;
+    padding: 20px 75px 75px 29%;
+    border-style: solid;
+    border-width: 2px;
+    border-color: black;
+    font-size: 0px;
+}
+
+h2 {
+    font-size: 35px;
+}
+
+#urlTable {
+    margin: 5px 0 0px 75px;
+    font-size: 25px;
+}
+
+#lowerButtons {
+    padding-left: 230px;
+    font-size: 15px;
+}
+
+#plus {
+    font-size: 20px;
+}
+
+#scrape {
+    font-size: 20px;
+}
+
+#urlInput {
+    width: 150%;
+    padding-right: 150px;
+    
+}
+
+td {
+    width: 25%;
+}
+
+input {
+    width: 95%;
+    height: 22px;
+}
+
+select {
+    width: 50%;
+    height: 28px;
+}
+
+#text1 {
+    position: absolute;
+    left: 39.8%;
+}
+
+#text2 {
+    position: relative;
+    left: -19.8%;
+}
+

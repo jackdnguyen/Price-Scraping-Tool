@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="urlPage.css">
+    <title>Document</title>
+</head>
+<body> 
+    <div id = "main">
+        <div id = "button">   
+            <button id = "url"> URL</button>
+            <button id = "scrapedData">Scraped Data</button>
+        </div>
+
+        <div>
+            <div id = "price">
+               <h2>Price Scraping Tool</h2> 
+               <table id = "urlTable">
+                <thead>
+                    <tr>
+                        <th id = "text1">
+                            Homepage Url
+                        </th>
+                        <th id = "text2">
+                            Profile
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class = "urlInput">
+                            <input type="text" class="urlInput" id="name" name="uname">
+                        </td>
+                        <td class = "profileInput">
+                            <select class="profileInput">
+                                <option selected value = "default">Select a Company</option>
+                                <option value="midland">Midland Appliances</option>
+                                <option value="canadian">Canadian Appliances</option>
+                                <option value="goemans">Goemans</option>
+                              </select>
+                        </td>
+                        
+                    </tr>
+
+                </tbody>
+
+               </table>
+               <div id = lowerButtons>               
+                <button  id = "plus"> Add Url </button>
+                <button  id = "scrape"> Scrape </button>
+            </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+</html>
