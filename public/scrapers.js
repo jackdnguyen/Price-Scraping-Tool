@@ -9,68 +9,72 @@ let browser;
 // Function Parameters: URL, Last Modified Date, Product num
 // Scrapes Price, SKU, Product Name from Product URL
 async function scrapeProduct(url, lastmod, i) {
-    // Retrieves SKU from URL
-    const urlSplit = url.split("/");
-    const sku = urlSplit[urlSplit.length-1]
-    if(sku == ''){ // If URL is not a product exit
-        return;
-    }
-    // Set-up return object
-    var obj = {
-        Product:`${i}`,
-        name:'',
-        sku:`${sku}`,
-        url:`${url}`,
-        lastmod:`${lastmod}`,
-        price:''
-    };
-    const page = await browser.newPage();
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {
-    if(req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image'){
-    req.abort();
-    }
-    else {
-    req.continue();
-    }
-    });
-    page.goto(url, {
-    waitUntil: 'domcontentloaded',
-    //remove timout
-    timeout: 0
-    });
-    process.setMaxListeners(Infinity); // Sets Max Listeners to Inf
     try{
-        // Extract Product Name
-        await page.waitForXPath('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
-        const [el3] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
-        const txt3 = await el3.getProperty('innerText');
-        const rawTxt3 = await txt3.jsonValue();
-        obj.name = rawTxt3;
-        try{
-            // Extract Price
-            const [el] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/dl[2]/dd');
-            const txt = await el.getProperty('innerText');
-            const rawTxt = await txt.jsonValue();
-            let text = rawTxt.replace(/\$|,/g,''); // Turn price into integer value
-            obj.price = parseFloat(text);
-        }catch(e){ // Price Doesn't exist
-            obj.price = 0;
+        // Retrieves SKU from URL
+        const urlSplit = url.split("/");
+        const sku = urlSplit[urlSplit.length-1]
+        if(sku == ''){ // If URL is not a product exit
+            return;
         }
-        results.push(obj); // Push Obj into results array
-        await page.close();
-    } catch(e){
+        // Set-up return object
+        var obj = {
+            Product:`${i}`,
+            name:'',
+            sku:`${sku}`,
+            url:`${url}`,
+            lastmod:`${lastmod}`,
+            price:''
+        };
+        const page = await browser.newPage();
+        await page.setRequestInterception(true);
+        page.on('request', (req) => {
+        if(req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image'){
+        req.abort();
+        }
+        else {
+        req.continue();
+        }
+        });
+        page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        //remove timout
+        timeout: 0
+        });
+        process.setMaxListeners(Infinity); // Sets Max Listeners to Inf
+        try{
+            // Extract Product Name
+            await page.waitForXPath('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
+            const [el3] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
+            const txt3 = await el3.getProperty('innerText');
+            const rawTxt3 = await txt3.jsonValue();
+            obj.name = rawTxt3;
+            try{
+                // Extract Price
+                const [el] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/dl[2]/dd');
+                const txt = await el.getProperty('innerText');
+                const rawTxt = await txt.jsonValue();
+                let text = rawTxt.replace(/\$|,/g,''); // Turn price into integer value
+                obj.price = parseFloat(text);
+            }catch(e){ // Price Doesn't exist
+                obj.price = 0;
+            }
+            results.push(obj); // Push Obj into results array
+            await page.close();
+        } catch(e){
+            console.log(e);
+            page.close();
+        } finally {
+            console.log(obj);
+        }
+    }catch(e){
         console.log(e);
-        page.close();
-    } finally {
-        console.log(obj);
     }
 }
 //scrapeProduct('https://www.goemans.com/home/kitchen/accessories/cooking/range/OW3001');
 
 // Function runs through goemans.com/sitemap.xml to extract all of product URL's
 async function sitemap(index){
-    const browser = await puppeteer.launch({headless:true});
+    const browser = await puppeteer.launch({headless:true, args: ['--no-sandbox']});
     try{
         const page = await browser.newPage();
         page.goto('https://www.goemans.com/sitemap.xml');
@@ -111,16 +115,10 @@ async function sitemap(index){
     }
 }
 
-function printArray(){
-    for(var i=0;i<Array.length;i++){
-        console.log(Array[i].url);
-    }
-}
-
 const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
 // Runs Scrape Product for each element in URL Array
 async function scrape(){
-    browser = await puppeteer.launch({headless: true});
+    browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
     for(var i=0; i<urlArray.length;i++){
         scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
         await timer(1400); // 1.4 second delay
