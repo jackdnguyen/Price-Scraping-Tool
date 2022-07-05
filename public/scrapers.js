@@ -23,14 +23,23 @@ async function scrapeProduct(url, lastmod, i) {
         url:`${url}`,
         lastmod:`${lastmod}`,
         price:''
-   };
-   const page = await browser.newPage();
-   page.goto(url, {
-    waitUntil: 'load',
+    };
+    const page = await browser.newPage();
+    await page.setRequestInterception(true);
+    page.on('request', (req) => {
+    if(req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image'){
+    req.abort();
+    }
+    else {
+    req.continue();
+    }
+    });
+    page.goto(url, {
+    waitUntil: 'domcontentloaded',
     //remove timout
     timeout: 0
-   });
-   process.setMaxListeners(Infinity); // Sets Max Listeners to Inf
+    });
+    process.setMaxListeners(Infinity); // Sets Max Listeners to Inf
     try{
         // Extract Product Name
         await page.waitForXPath('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
@@ -61,7 +70,7 @@ async function scrapeProduct(url, lastmod, i) {
 
 // Function runs through goemans.com/sitemap.xml to extract all of product URL's
 async function sitemap(index){
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({headless:true});
     try{
         const page = await browser.newPage();
         page.goto('https://www.goemans.com/sitemap.xml');
@@ -71,7 +80,7 @@ async function sitemap(index){
         });
         // Loop: Extracts URL & lastmod from sitemap
         var i = index;
-        for(var i;i<5000;i++){
+        for(var i;i<206;i++){
             // Extracts url
             await page.waitForSelector(`#folder${i} > div.opened > div:nth-child(2) > span:nth-child(2)`, { // Wait for selector to laod
                 visible: true,
@@ -96,6 +105,7 @@ async function sitemap(index){
     } catch(e) {
         console.log(e);
     } finally {
+        console.log("Scraped URLs");
         await browser.close();
         scrape(); // Run Scrape URL Function
     }
@@ -110,7 +120,7 @@ function printArray(){
 const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
 // Runs Scrape Product for each element in URL Array
 async function scrape(){
-    browser = await puppeteer.launch();
+    browser = await puppeteer.launch({headless: true});
     for(var i=0; i<urlArray.length;i++){
         scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
         await timer(1400); // 1.4 second delay
