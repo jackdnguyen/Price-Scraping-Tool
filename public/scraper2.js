@@ -4,6 +4,7 @@ let results = []
 
 async function sitemap1() {
    try {
+        console.log("sitemap1")
        const URL = 'https://www.canadianappliance.ca/sitemaps/sitemap-1.xml'
        const browser = await puppeteer.launch()
        const page = await browser.newPage()
