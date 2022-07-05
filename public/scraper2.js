@@ -1,4 +1,13 @@
 const puppeteer = require('puppeteer');
+const { Pool } = require('pg')
+
+var pool = new Pool({
+    connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
+    // ssl: {
+    //     rejectUnauthorized: false
+    //   }
+})
+
 
 function delay(time) {
     return new Promise(function(resolve) { 
@@ -59,6 +68,14 @@ async function scraper(browser, link, index) {
             waitUntil: 'networkidle2',
             timeout: 0})
 
+        await page.setRequestInterception(true)
+        page.on('request', (request)=>{
+            if (request.resourceType() == 'image' || request.resourceType() == 'stylesheet' || request.resourceType() == 'font')
+                request.abort()
+            else
+                request.continue()
+        })
+
         let data = await page.evaluate(() => {
             if(document.querySelector('h1 [itemprop=name]') == null)
                 return
@@ -78,14 +95,13 @@ async function scraper(browser, link, index) {
                     return results
             }
         })
-
         if(data == null) {
             console.log(index)
             await page.close
         }
         else {
-            console.log(index)
-            console.log(data)
+            
+            await pool.query(`INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '2020-06-20')`)
             await page.close
         }
     } 
