@@ -1,6 +1,10 @@
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 
+//create table canAppl(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT);
+//create table goemans(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
+//select exists (select 1 from canAppl where sku='000' LIMIT 1);
+
 var pool = new Pool({
     connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
     // ssl: {
@@ -25,6 +29,7 @@ async function sitemap1() {
             args: ['--no-sandbox']
         }
        )
+
        const page = await browser.newPage()
 
        await page.goto(URL,{
@@ -100,8 +105,18 @@ async function scraper(browser, link, index) {
             await page.close
         }
         else {
-            
-            await pool.query(`INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '2020-06-20')`)
+            //Database Queries
+            var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '2020-06-20')`
+            var updateQuery = `UPDATE canAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='2020-06-20' WHERE sku='${data[0].sku}'`
+            var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM canAppl WHERE sku='${data[0].sku}' LIMIT 1)`)
+
+            if(getDbSku.rows[0].exists)
+            {
+                await pool.query(updateQuery)
+            }
+            else{
+                await pool.query(insertQuery)
+            }
             await page.close
         }
     } 
