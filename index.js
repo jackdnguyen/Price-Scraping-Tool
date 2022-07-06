@@ -16,7 +16,7 @@ app.use(
     secret: "bigpete",
     resave: false,
     saveUninitialized: false,
-    maxAge: 20 * 1000, // 30 minutes
+    maxAge: 30 * 60 * 1000, // 30 minutes
   })
 );
 
