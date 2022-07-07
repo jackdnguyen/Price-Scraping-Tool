@@ -1,16 +1,16 @@
-const puppeteer = require('puppeteer');
-const { Pool } = require('pg')
+// const puppeteer = require('puppeteer');
+// const { Pool } = require('pg')
 
 //create table canAppl(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT);
 //create table goemans(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
 //select exists (select 1 from canAppl where sku='000' LIMIT 1);
 
-var pool = new Pool({
-    connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
-    // ssl: {
-    //     rejectUnauthorized: false
-    //   }
-})
+// var pool = new Pool({
+//     connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
+//     // ssl: {
+//     //     rejectUnauthorized: false
+//     //   }
+// })
 
 
 function delay(time) {
@@ -125,7 +125,6 @@ async function scraper(browser, link, index) {
     }
 }
 
-sitemap1()
 
 // async function runScrap() {
 //     sitemap1()
@@ -136,4 +135,4 @@ sitemap1()
 // sitemap1()
 // await console.log(sitemap1())
 
-
+export async function sitemap1();

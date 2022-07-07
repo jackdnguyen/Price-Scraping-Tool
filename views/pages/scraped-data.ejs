@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <%- include ("../partials/header.ejs") %>
+  <title>Scraped Data</title>
+  <script type="text/javascript" src="display.js"></script>
+  <script type="text/javascript" src="scraper2.js"></script>
+
+  <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
+  <link rel="stylesheet" href="login.css" />
+</head>
+
+<body>
+  <main>
+        <table id="displayData">
+          <tr>
+            <th>Company name</th>
+            <th>Link to scraped data</th>
+            <th>Last checked</th>
+          </tr>
+          <!-- <form id="scraped-data" action="/scraped-data">
+            <% results.forEach(function(r) { %>
+            <tr>
+                <td><%=r.name%></td>
+                <td><%=r.link%></td>
+                <td><%=r.lChecked%></td>
+              </form>
+            </tr>
+            <% }); %>
+         </form> -->
+        </table>
+  </main>
+</body>
+
+</html>

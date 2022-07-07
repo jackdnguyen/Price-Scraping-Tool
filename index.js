@@ -1,10 +1,113 @@
-const express = require('express')
-const path = require('path')
-const PORT = process.env.PORT || 5000
+const express = require("express");
+const session = require("express-session");
+const puppeteer = require('puppeteer');
+const { Pool } = require('pg')
+var pool = new Pool({
+  connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
+  // ssl: {
+  //     rejectUnauthorized: false
+  //   }
+})
 
-express()
-  .use(express.static(path.join(__dirname, 'public')))
-  .set('views', path.join(__dirname, 'views'))
-  .set('view engine', 'ejs')
-  .get('/', (req, res) => res.render('pages/index'))
-  .listen(PORT, () => console.log(`Listening on ${ PORT }`))
+const path = require("path");
+const PORT = process.env.PORT || 5000;
+//const PORT = process.env.PORT
+
+app = express();
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(express.static('public'))
+
+// session info
+app.use(
+  session({
+    name: "session",
+    secret: "bigpete",
+    resave: false,
+    saveUninitialized: false,
+    maxAge: 20 * 1000, // 30 minutes
+  })
+);
+
+// static
+app.use(express.static(path.join(__dirname, "public")));
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "ejs");
+
+app.get('/', async (req, res) => {
+  try {
+    res.render('pages/index')
+  }
+  catch (error){
+    res.end(error)
+  }
+})
+
+// login post
+app.post("/login", async (req, res) => {
+  var un = req.body.f_uname;
+  var pwd = req.body.f_pwd;
+
+  // var verifyQuery = `SELECT * FROM validusers WHERE uname='${un}' AND password='${pwd}'`
+  // var result = await pool.query(verifyQuery)
+
+  // if result.rows is !empty
+  // valid user
+  if (un === "admin" && pwd === "scraper") {
+    // valid
+    req.session.user = req.body;
+    res.redirect("/dashboard");
+  } else {
+    res.redirect("/");
+  }
+  // else
+  // invalid user
+});
+
+//logout post
+app.post("/logout", async (req, res) => {
+  console.log("hello");
+  res.redirect("/");
+  req.session.destroy();
+  // else
+  // invalid user
+});
+
+
+//url page get
+app.get("/dashboard", (req, res) => {
+  if (req.session.user) {
+    res.render("pages/urlPage");
+  } 
+  else
+    res.redirect("/");
+});
+
+//scraped page get
+app.get("/display", async (req, res) => {
+  if (req.session.user) {
+    res.render("pages/scraped-data");
+  } 
+  else 
+    res.redirect("/");
+});
+
+// //scraped page post
+// app.post("/display", async (req, res) => {
+//   //res.render("pages/display");
+//   res.render("pages/scraped-data");
+//   res.redirect("/scraped-data");
+//   // else
+//   // invalid user
+// });
+
+app.get("/display-data", async (req, res) => {
+  if (req.session.user) {
+    res.render("pages/db");
+  } 
+  else
+    res.redirect("/");
+});
+
+app.listen(PORT, () => console.log(`Listening on ${PORT}`));
