@@ -298,7 +298,7 @@ async function scrape(){
     await browser.close();
 }
 
-async function sitemap(index);
+// async function sitemap(index)
 
 
 // Canadian Appliance scrape
