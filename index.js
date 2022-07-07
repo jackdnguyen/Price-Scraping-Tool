@@ -4,9 +4,9 @@ const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
-  ssl: {
-      rejectUnauthorized: false
-    }
+  // ssl: {
+  //     rejectUnauthorized: false
+  //   }
 })
 
 const path = require("path");
@@ -136,6 +136,17 @@ app.get('/canApp', async (req, res)=> {
     res.redirect("/");
 });
 
+app.get('/goemans', async (req, res)=> {
+  if (req.session.user) {
+    var allusersquery = `SELECT * FROM goemans ORDER BY name`;
+    const result = await pool.query(allusersquery)
+    const data = { results: result.rows }
+    res.render('pages/db', data)
+  } 
+  else 
+    res.redirect("/");
+});
+
 app.get("/scrape", async(req,res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
@@ -148,8 +159,10 @@ app.get("/scrape:id", async(req,res) => {
   console.log(id);
   if(id == 'goemans'){
     sitemap(106);
+    await res.render('pages/scraped-data')
   } else if (id == 'canAppl'){
     sitemap1();
+    await res.render('pages/scraped-data')
   } else{
     res.render("pages/urlPage");
   }
