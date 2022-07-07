@@ -87,7 +87,10 @@ app.get("/dashboard", (req, res) => {
 //scraped page get
 app.get("/display", async (req, res) => {
   if (req.session.user) {
-    res.render("pages/scraped-data");
+    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    const result = await pool.query(allusersquery)
+    const data = { results: result.rows }
+    res.render('pages/scraped-data', data)
   } 
   else 
     res.redirect("/");
@@ -104,10 +107,34 @@ app.get("/display", async (req, res) => {
 
 app.get("/display-data", async (req, res) => {
   if (req.session.user) {
-    res.render("pages/db");
+    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    const result = await pool.query(allusersquery)
+    const data = { results: result.rows }
+    res.render('pages/db', data)
+  } 
+  else 
+    res.redirect("/");
+});
+
+//url page get
+app.get("/home", (req, res) => {
+  if (req.session.user) {
+    res.render("pages/urlPage");
   } 
   else
     res.redirect("/");
 });
+
+app.get('/canApp', async (req, res)=> {
+  if (req.session.user) {
+    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    const result = await pool.query(allusersquery)
+    const data = { results: result.rows }
+    res.render('pages/db', data)
+  } 
+  else 
+    res.redirect("/");
+});
+
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));

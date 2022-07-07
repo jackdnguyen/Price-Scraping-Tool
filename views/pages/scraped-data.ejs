@@ -4,33 +4,42 @@
 <head>
   <%- include ("../partials/header.ejs") %>
   <title>Scraped Data</title>
-  <script type="text/javascript" src="display.js"></script>
-  <script type="text/javascript" src="scraper2.js"></script>
-
   <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
-  <link rel="stylesheet" href="login.css" />
+  <link rel="stylesheet" href="/stylesheets/login.css" />
+  <link rel="stylesheet" href="/stylesheets/urlPage.css" />
 </head>
 
 <body>
-  <main>
+  <div id="main">
+    <div id="button">
+      <form class="logoutform" action="/home">
+        <button id="url">URL</button>
+      </form>
+
+      <form class="logoutform" action="/display">
+        <button id="scrapedData">Scraped Data</button>
+      </form>
+
+      <form class="logoutform" action="/logout?_method=DELETE" method="POST">
+        <button id="logout" method="POST" type="submit">Log Out</button>
+      </form>
+    </div>
+    <div class="container">
         <table id="displayData">
           <tr>
             <th>Company name</th>
             <th>Link to scraped data</th>
             <th>Last checked</th>
           </tr>
-          <!-- <form id="scraped-data" action="/scraped-data">
-            <% results.forEach(function(r) { %>
-            <tr>
-                <td><%=r.name%></td>
-                <td><%=r.link%></td>
-                <td><%=r.lChecked%></td>
-              </form>
-            </tr>
-            <% }); %>
-         </form> -->
+          <tr>
+            <th>Canadian Appliance</th>
+            <th><form action="/canApp">
+              <button>Link</button>
+            </form></th>
+            <th>Last checked</th>
+          </tr>
         </table>
-  </main>
+      </div>
 </body>
 
 </html>

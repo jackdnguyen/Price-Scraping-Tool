@@ -1,17 +1,17 @@
 // Author: Jack Nguyen
 // Purpose: Scrapes data from goemans.com
-// const puppeteer = require('puppeteer');
-// const { Pool } = require('pg')
+const puppeteer = require('puppeteer');
+const { Pool } = require('pg')
 
 const urlArray = [];
 const results = [];
 
-// var pool = new Pool({
-//     connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
-//     // ssl: {
-//     //     rejectUnauthorized: false
-//     //   }
-// })
+var pool = new Pool({
+    connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
+    // ssl: {
+    //     rejectUnauthorized: false
+    //   }
+})
 
 let browser;
 

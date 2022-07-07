@@ -7,37 +7,51 @@
       <script type="text/javascript" src="scraper2.js"></script>
     
       <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
-      <link rel="stylesheet" href="login.css" />
+      <link rel="stylesheet" href="/stylesheets/login.css" />
+      <link rel="stylesheet" href="/stylesheets/urlPage.css" />
     </head>
 
     <body>
-    <div class="container">
-    <form action="/company-name">
-      <% results.forEach(function(r) { %>
-      <h2><%= r.name %></h2>
-      <% }); %>
-    </form>
 
-    <table id="displayData">
-      <tr>
-        <th>SKU</th>
-        <th>Product's Name</th>
-        <th>Sales Price</th>
-        <th>Url</th>
-        <th>Last Price Updated</th>
-      </tr>
-      <form id="display-data" action="/display-data" method="POST">
-        <% results.forEach(function(r) { %>
+    <div id="main">
+      <div id="button">
+        <form class="logoutform" action="/home">
+          <button id="url">URL</button>
+        </form>
+
+        <form class="logoutform" action="/display">
+          <button id="scrapedData">Scraped Data</button>
+        </form>
+
+        <form class="logoutform" action="/logout?_method=DELETE" method="POST">
+          <button id="logout" method="POST" type="submit">Log Out</button>
+        </form>
+      </div>
+    <div class="container">
+      <form action="/company-name" method="POST">
+        <h2>Canadian Appliance</h2>
+      </form>
+
+      <table id="displayData">
         <tr>
-            <td><%=r.sku%></td>
-            <td><%=r.name%></td>
-            <td><%=r.price%></td>
-            <td><%=r.url%></td>
-            <td><%=r.lpmod%></td>
-          </form>
+          <th>SKU</th>
+          <th>Product's Name</th>
+          <th>Sales Price</th>
+          <th>Url</th>
+          <th>Last Price Updated</th>
         </tr>
-        <% }); %>
-    </form>
+        <form id="display-data" action="/display-data" method="POST">
+          <% results.forEach(function(r) { %>
+          <tr>
+              <td><%=r.sku%></td>
+              <td><%=r.name%></td>
+              <td><%=r.price%></td>
+              <td><%=r.url%></td>
+              <td><%=r.lpmod%></td>
+            </form>
+          </tr>
+          <% }); %>
+      </form>
 
     </div>
 
