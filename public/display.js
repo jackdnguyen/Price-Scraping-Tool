@@ -1,19 +1,15 @@
-var getProfile = document.getElementsByTagName("select")[0].value;
+var scrapeForm = document.getElementById("scraper");
 
-
-async function handleInput(e) {
-    let getProfile = document.getElementsByTagName("select")[0].value;
-    if (getProfile == 'canAppl') {
-        await sitemap1();
+var getProfile = document.getElementsByTagName("select")[0].addEventListener('change', function(){
+    let value = document.getElementsByTagName("select")[0].value;
+    if(value == 'canAppl'){
+        scrapeForm.action = "/scrapecanAppl"
+        console.log(scrapeForm.action);
+    } else if(value == 'goemans'){
+        scrapeForm.action = "/scrapegoemans"
+        console.log(scrapeForm.action);
+    } else if(value == 'default'){
+        scrapeForm.action = "/scrape"
+        console.log(scrapeForm.action);
     }
-    else if(getProfile == 'goemans') {
-        await sitemap(106);
-    }
-}
-
-
-
-// window.onclick=async function(value){
-//     console.log("display")
-//     await sitemap1();
-// }
+});
