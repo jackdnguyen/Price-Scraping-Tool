@@ -1,12 +1,12 @@
 const express = require("express");
-const session = require("express-session");
+const session = require("cookie-session");
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
-  // ssl: {
-  //     rejectUnauthorized: false
-  //   }
+  ssl: {
+      rejectUnauthorized: false
+    }
 })
 
 const path = require("path");
