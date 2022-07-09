@@ -1,5 +1,5 @@
 const express = require("express");
-const session = require("cookie-session");
+const session = require("express-session");
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 var pool = new Pool({
