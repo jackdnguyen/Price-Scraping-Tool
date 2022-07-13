@@ -4,9 +4,9 @@ const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
-  ssl: {
-      rejectUnauthorized: false
-    }
+  // ssl: {
+  //     rejectUnauthorized: false
+  //   }
 })
 
 const path = require("path");
@@ -247,7 +247,7 @@ async function scrapeProduct(url, lastmod, i) {
             await page.close();
         } catch(e){
             console.log(e);
-            page.close();
+            // page.close();
         } finally {
             console.log(obj);
         }
@@ -303,12 +303,17 @@ async function sitemap(index){
 const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
 // Runs Scrape Product for each element in URL Array
 async function scrape(){
+  try {
     browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
-    for(var i=0; i<urlArray.length;i++){
+    for(var i=0; i < 101;i++){
         scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
         await timer(1400); // 1.4 second delay
     }
     await browser.close();
+  }
+  catch(e) {
+    console.log(e)
+  }
 }
 
 // async function sitemap(index)
@@ -403,6 +408,8 @@ async function scraper(browser, link, index) {
           await page.close
       }
       else {
+          console.log(index)
+          console.log(data)
           //Database Queries
           var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '2020-06-20')`
           var updateQuery = `UPDATE canAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='2020-06-20' WHERE sku='${data[0].sku}'`
