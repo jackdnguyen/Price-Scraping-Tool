@@ -1,16 +1,16 @@
-// const puppeteer = require('puppeteer');
-// const { Pool } = require('pg')
+const puppeteer = require('puppeteer');
+const { Pool } = require('pg')
 
 //create table canAppl(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT);
 //create table goemans(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
 //select exists (select 1 from canAppl where sku='000' LIMIT 1);
 
-// var pool = new Pool({
-//     connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
-//     // ssl: {
-//     //     rejectUnauthorized: false
-//     //   }
-// })
+var pool = new Pool({
+    connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
+    // ssl: {
+    //     rejectUnauthorized: false
+    //   }
+})
 
 
 function delay(time) {
@@ -19,7 +19,7 @@ function delay(time) {
     });
  }
 
-async function sitemap1() {
+async function scrapCanAppl() {
    try {
        const URL = 'https://www.canadianappliance.ca/_sitemap_products.php'
        const browser = await puppeteer.launch(
@@ -58,11 +58,6 @@ async function sitemap1() {
        console.error(error)
    }
 }
-
-//data2 = data.slice(1, data.length-4)
-//data3 = data2.replace(',' , '')
-//parseFloat(data3)
-
 
 async function scraper(browser, link, index) {  
     try {
@@ -126,13 +121,4 @@ async function scraper(browser, link, index) {
 }
 
 
-// async function runScrap() {
-//     sitemap1()
-//     await console.log(links)
-// }
-
-// runScrap()
-// sitemap1()
-// await console.log(sitemap1())
-
-export async function sitemap1();
+module.exports = {scrapCanAppl};

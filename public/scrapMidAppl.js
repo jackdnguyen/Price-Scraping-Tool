@@ -20,7 +20,7 @@ function delay(time) {
     });
  }
 
-async function sitemapMidAppl() {
+async function scrapMidAppl() {
    try {
        const URL = 'https://cdn.avbportal.com/magento-media/sitemaps/cn0122/sitemap.xml'
        const browser = await puppeteer.launch(
@@ -135,16 +135,4 @@ async function scraper(browser, link, index, lMod) {
     }
 }
 
-
-// async function runScrap() {
-//     sitemap1()
-//     await console.log(links)
-// }
-
-// runScrap()
-// sitemap1()
-// await console.log(sitemap1())
-
-// export async function sitemapMidAppl()
-
-sitemapMidAppl();
+module.exports = { scrapMidAppl };

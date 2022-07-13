@@ -96,7 +96,7 @@ async function scrapeProduct(url, lastmod, i) {
 //scrapeProduct('https://www.goemans.com/home/kitchen/accessories/cooking/range/OW3001');
 
 // Function runs through goemans.com/sitemap.xml to extract all of product URL's
-async function sitemap(index){
+async function scrapGoemans(index){
     const browser = await puppeteer.launch({headless:true, args: ['--no-sandbox']});
     try{
         const page = await browser.newPage();
@@ -149,7 +149,9 @@ async function scrape(){
     await browser.close();
 }
 
-export async function sitemap(index);
+// export async function scrapGoemans(index);
+
+module.exports = { scrapGoemans }
 
 
 
