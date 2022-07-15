@@ -13,6 +13,8 @@ var pool = new Pool({
 //     //   }
 })
 
+let browser;
+
 
 function delay(time) {
     return new Promise(function(resolve) { 
@@ -20,27 +22,30 @@ function delay(time) {
     });
  }
 
-async function scrapMidAppl() {
-   try {
-       const URL = 'https://cdn.avbportal.com/magento-media/sitemaps/cn0122/sitemap.xml'
-       const browser = await puppeteer.launch(
+async function launchBrowser(){
+    browser = await puppeteer.launch(
         {
             // userDataDir: './data',
             headless: true,
             args: ['--no-sandbox']
-        }
-       )
+        })
+}
+
+async function sitemap() {
+   try {
+       const URL = 'https://cdn.avbportal.com/magento-media/sitemaps/cn0122/sitemap.xml'
+        await launchBrowser()
 
        const page = await browser.newPage()
 
        await page.goto(URL,{
-        waitUntil: 'load',
+        waitUntil: 'networkidle0',
         timeout: 0,
        })
        let data = await page.evaluate(() => {
            let linkData = []
-           let items = document.querySelectorAll('url')
-            for(let i= 167; i < 267; i++) {
+           let items = document.querySelectorAll('url') //167 start index
+            for(let i= 167; i < items.length; i++) {
                 linkData.push( {
                     url: items[i].querySelector('loc').innerHTML,
                     lastMod: items[i].querySelector('lastmod').innerHTML,
@@ -48,24 +53,35 @@ async function scrapMidAppl() {
             }
             return linkData
        })
-    //    console.log(data)
-    //    data.forEach(async(item)=>{
-    //     await scraper(browser, item)
-    //    })
-       for(let i = 0; i < data.length; i++) {
-        await scraper(browser, data[i].url, i, data[i].lastMod)
-        delay(1000)
-       }
-       await browser.close()
+       return data
    } 
    catch (error) {
        console.error(error)
+       await browser.close()
    }
 }
 
-//data2 = data.slice(1, data.length-4)
-//data3 = data2.replace(',' , '')
-//parseFloat(data3)
+
+async function scrapMidAppl(){
+    let linkItems = await sitemap()
+    await browser.close()
+    await launchBrowser()
+
+    for(let i = 0; i < 1000;) {
+        await scraper(browser, linkItems[i].url, i, linkItems[i].lastMod)
+        // await delay(1000)
+        i++;
+
+        if(i % 100 === 0)
+        {
+            await browser.close()
+            await delay(10000)
+            await launchBrowser()
+        }
+
+       }
+       await browser.close()
+}
 
 
 async function scraper(browser, link, index, lMod) {  
@@ -74,12 +90,12 @@ async function scraper(browser, link, index, lMod) {
         const page = await browser.newPage()
 
         await page.goto(URL, { 
-            waitUntil: 'networkidle2',
+            waitUntil: 'domcontentloaded',
             timeout: 0})
 
         await page.setRequestInterception(true)
         page.on('request', (request)=>{
-            if (request.resourceType() == 'image' || request.resourceType() == 'stylesheet' || request.resourceType() == 'font')
+            if (request.resourceType() == 'image' || request.resourceType() == 'stylesheet' || request.resourceType() == 'font' || request.resourceType() == 'script')
                 request.abort()
             else
                 request.continue()
@@ -111,7 +127,7 @@ async function scraper(browser, link, index, lMod) {
         })
         if(data == null) {
             console.log(index)
-            await page.close
+            await page.close()
         }
         else {
             //Database Queries
@@ -126,13 +142,17 @@ async function scraper(browser, link, index, lMod) {
             else{
                 await pool.query(insertQuery)
             }
+            console.log(index)
             console.log(data)
-            await page.close
+            await page.close()
         }
     } 
     catch (error) {
             console.error(error)
+            await page.close()
     }
 }
 
 module.exports = { scrapMidAppl };
+
+// scrapMidAppl();

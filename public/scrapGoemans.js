@@ -107,7 +107,7 @@ async function scrapGoemans(index){
         });
         // Loop: Extracts URL & lastmod from sitemap
         var i = index;
-        for(var i; i< 206;i++){
+        for(var i; i< 1106;i++){
             // Extracts url
             await page.waitForSelector(`#folder${i} > div.opened > div:nth-child(2) > span:nth-child(2)`, { // Wait for selector to laod
                 visible: true,
@@ -142,11 +142,16 @@ const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout
 // Runs Scrape Product for each element in URL Array
 async function scrape(){
     browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
-    for(var i=0; i<urlArray.length;i++){
-        scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
-        await timer(1400); // 1.4 second delay
+    try {
+        for(var i=0; i<urlArray.length+1;i++){
+            scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
+            await timer(1400); // 1.4 second delay
+        }
+        await browser.close();
     }
-    await browser.close();
+    catch(e){
+        console.log(e)
+    }
 }
 
 // export async function scrapGoemans(index);

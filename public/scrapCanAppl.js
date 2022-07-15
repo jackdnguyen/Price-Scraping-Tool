@@ -12,6 +12,7 @@ var pool = new Pool({
     //   }
 })
 
+let browser;
 
 function delay(time) {
     return new Promise(function(resolve) { 
@@ -19,44 +20,62 @@ function delay(time) {
     });
  }
 
-async function scrapCanAppl() {
-   try {
-       const URL = 'https://www.canadianappliance.ca/_sitemap_products.php'
-       const browser = await puppeteer.launch(
+async function launchBrowser(){
+    browser = await puppeteer.launch(
         {
             // userDataDir: './data',
             headless: true,
             args: ['--no-sandbox']
-        }
-       )
+        })
+}
+
+async function sitemap() {
+   try {
+       const URL = 'https://www.canadianappliance.ca/_sitemap_products.php'
+       await launchBrowser()
 
        const page = await browser.newPage()
 
        await page.goto(URL,{
-        waitUntil: 'load',
+        waitUntil: 'domcontentloaded',
         timeout: 0,
        })
        let data = await page.evaluate(() => {
            let urls = []
            let items = document.getElementsByTagName('body')[0].innerHTML.split('\n')
-            for(let i= 0; i < 100; i++) {
+            for(let i= 0; i < items.length; i++) {
                 urls.push(items[i])
             }
             return urls
        })
-    //    console.log(data)
-    //    data.forEach(async(item)=>{
-    //     await scraper(browser, item)
-    //    })
-       for(let i = 0; i < 100; i++) {
-        await scraper(browser, data[i], i)
-        delay(1000)
-       }
-       await browser.close()
+
+       return data;
    } 
    catch (error) {
        console.error(error)
+       await browser.close()
    }
+}
+
+async function scrapCanAppl(){
+    let urls = await sitemap()
+    await browser.close()
+    await launchBrowser()
+
+    for(let i = 0; i < 1000;) {
+        await scraper(browser, urls[i], i)
+        await delay(1000)
+        i++;
+
+        if(i % 100 === 0)
+        {
+            await browser.close()
+            await delay(10000)
+            await launchBrowser()
+        }
+
+       }
+       await browser.close()
 }
 
 async function scraper(browser, link, index) {  
@@ -65,19 +84,19 @@ async function scraper(browser, link, index) {
         const page = await browser.newPage()
 
         await page.goto(URL, { 
-            waitUntil: 'networkidle2',
+            waitUntil: 'domcontentloaded',
             timeout: 0})
 
         await page.setRequestInterception(true)
         page.on('request', (request)=>{
-            if (request.resourceType() == 'image' || request.resourceType() == 'stylesheet' || request.resourceType() == 'font')
+            if (request.resourceType() == 'image' || request.resourceType() == 'stylesheet' || request.resourceType() == 'font' || request.resourceType() == 'script')
                 request.abort()
             else
                 request.continue()
         })
 
         let data = await page.evaluate(() => {
-            if(document.querySelector('h1 [itemprop=name]') == null)
+            if(document.querySelector('.pd-brand [itemprop="name"]') == null)
                 return
             else {
                 let results = []
@@ -88,8 +107,8 @@ async function scraper(browser, link, index) {
                     tempPrice = parseFloat(tempPrice.slice(1, tempPrice.length-4).replace(',' , ''))
                 }
                     results.push({
-                        name: document.querySelector('h1 [itemprop=name]').textContent,
-                        sku: document.querySelector('h1 div').textContent,
+                        name: document.querySelector('.pd-brand [itemprop="name"]').content,
+                        sku: document.querySelector('[itemprop="sku"]').content,
                         price: tempPrice,
                     })
                     return results
@@ -97,7 +116,7 @@ async function scraper(browser, link, index) {
         })
         if(data == null) {
             console.log(index)
-            await page.close
+            await page.close()
         }
         else {
             //Database Queries
@@ -112,7 +131,9 @@ async function scraper(browser, link, index) {
             else{
                 await pool.query(insertQuery)
             }
-            await page.close
+            console.log(index)
+            console.log(data)
+            await page.close()
         }
     } 
     catch (error) {
@@ -122,3 +143,4 @@ async function scraper(browser, link, index) {
 
 
 module.exports = {scrapCanAppl};
+// scrapCanAppl();
