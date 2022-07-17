@@ -10,12 +10,10 @@ progress.style.width = '0%';
 
 
 
-
-
 button.onclick = function() {
 
-
 	if (progress.style.width === '0%') {
+
 		setInterval(speed, 2200);
 		
 		function speed(){
@@ -34,26 +32,42 @@ button.onclick = function() {
 }
 
 
+function cloneRow() {
+    var row = document.getElementById("row"); 
+    var table = document.getElementById("urlTable"); 
+    var clone = row.cloneNode(true); 
+    table.prepend(clone); 
+  }
+
+
+
+
 
 var getProfile = document.getElementsByTagName("select")[0].addEventListener('change', function(){
     let value = document.getElementsByTagName("select")[0].value;
-    if(value == 'canAppl'){
-        scrapeForm.action = "/scrapecanAppl"
-        console.log(scrapeForm.action);
-        
-    } 
-    else if(value == 'goemans'){
-        scrapeForm.action = "/scrapegoemans"
-        console.log(scrapeForm.action);
+
+    switch(value) {
+        case 'canAppl':
+            scrapeForm.action = "/scrapecanAppl"
+            // console.log(scrapeForm.action);
+            break;
+
+        case 'goemans':
+            scrapeForm.action = "/scrapegoemans"
+            // console.log(scrapeForm.action);
+            break;
+
+        case 'midAppl':
+            scrapeForm.action = "/scrapemidAppl"
+            // console.log(scrapeForm.action);
+            break;
+
+        default:
+            scrapeForm.action = "/scrape"
+            // console.log(scrapeForm.action);
+
     }
-    else if(value == 'midAppl'){
-        scrapeForm.action = "/scrapemidAppl"
-        console.log(scrapeForm.action);
-    }  
-    else if(value == 'default'){
-        scrapeForm.action = "/scrape"
-        console.log(scrapeForm.action);
-    }
+
 });
 
 

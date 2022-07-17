@@ -35,7 +35,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr id = "row">
                 <!-- <td class="urlInput">
                   <input type="text" class="urlInput" id="name" name="uname" placeholder="Homepage Url"/ onchange="handleInput(this)"/>
                 </td> -->
@@ -55,6 +55,7 @@
                     <form id="scraper" action="/scrape"  method="get">
                       <button id="scrape">Scrape</button>
                     </form>
+                    <button id = "add" onclick="cloneRow()">Add</button>
                     <div class = "bar"> 
                       <div class="progressDiv">
                         <div class="progress"></div>

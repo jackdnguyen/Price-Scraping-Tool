@@ -51,8 +51,17 @@
   
   #lowerButtons {
     font-size: 2rem;
-    float: right;
+    text-align: center;
+
   }
+
+  #add {
+    position: relative;
+    left:70px;
+    top: -32.5px;
+    padding: 0.25px;
+  }
+
   
   #plus {
     font-size: 2rem;
@@ -89,6 +98,8 @@
     height: 5rem;
     margin-top: 1rem;
   }
+
+ 
   
   /* #text1 {
     position: absolute;
@@ -109,10 +120,10 @@
    
   .bar{
     position: absolute;
-    top: 42%;
+    top: 58.5%;
     left: 60%;
     transform: translate(-50%, -50%);
-    width: 1000px;
+    width: 700px;
     max-width: 80%;
     height: 200px;
   }
