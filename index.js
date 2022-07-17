@@ -15,6 +15,7 @@ const { scrapCanAppl } = require("./public/scrapCanAppl.js");
 const { scrapMidAppl } = require("./public/scrapMidAppl.js");
 
 const path = require("path");
+const { syncBuiltinESMExports } = require("module");
 const PORT = process.env.PORT || 5000;
 
 
@@ -166,6 +167,7 @@ app.get('/midAppl', async (req, res)=> {
 app.get("/scrape", async(req,res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
+    
   } 
   else
     res.redirect("/")
@@ -176,13 +178,10 @@ app.get("/scrape:id", async(req,res) => {
   console.log(id);
   if(id == 'goemans'){
     scrapGoemans(106);
-    await res.render('pages/scraped-data')
   } else if (id == 'canAppl'){
     scrapCanAppl();
-    await res.render('pages/scraped-data')
   } else if (id == 'midAppl'){
     scrapMidAppl();
-    await res.render('pages/scraped-data')
   } else{
     res.render("pages/urlPage");
   }
