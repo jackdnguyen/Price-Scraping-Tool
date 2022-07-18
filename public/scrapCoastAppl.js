@@ -1,63 +1,90 @@
-const { product } = require('puppeteer');
 const puppeteer = require('puppeteer');
-
 var productNum = 1;
 const urlArray = [];
 
 let browser;
 
+const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
+
 async function scrape(){
     browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
     const page = await browser.newPage();
-
-    //let pageNum = 1;
-    //let collection = 'front-load-washers';
-
+    // For each collection in coast appliances
     for(let x=0; x< urlArray.length; x++){
         let url = urlArray[x];
         let pageNum = 1;
+        // While: Sifts through pages until no product is found
         while(true){
-            //console.log(url);
-            page.goto(`${url}?page_num=${pageNum}`);
+            try{
+                console.log(`${url} Page: ${pageNum}`);
+                page.goto(`${url}?page_num=${pageNum}`);
+                //page.goto('https://www.coastappliances.ca/collections/single-wall-ovens?narrow=%5B%5B%22Brand%22%2C%22MIELE%22%5D%5D');
 
-            await page.waitForNavigation({waitUntil: 'networkidle2'});
-
-            let element = await page.evaluate(() => {
-                return Array.from(document.querySelectorAll("#isp_search_results_container li .isp_product_info"), el => el.textContent);
-            });
-
-            console.log(element.length);
-            if(element.length === 0){
-                break;
-            }
-            for(var i=0; i<element.length;i++){
-                let nameSplit = element[i].split('-');
-                let brand = nameSplit[0];
-                let name = nameSplit[1];
-                let priceSplit = element[i].split("$");
-                let price;
-                if(priceSplit.length === 4){
-                    price = priceSplit[2];
-                } else if(priceSplit.length === 2){
-                    price = priceSplit[1];
-                } else{
-                    price = 0;
+                await page.waitForNavigation({waitUntil: 'networkidle2'});
+                // Element = Array of textContent with product data
+                let element = await page.evaluate(() => {
+                    // Selects all products in the container, el=>el.textContent makes each element textContent of product data
+                    return Array.from(document.querySelectorAll("#isp_search_results_container li .isp_product_info"), el => el.textContent);
+                });
+                // If there are no products in the container, break loop
+                console.log(element.length);
+                if(element.length === 0){
+                    break;
                 }
 
-                let skuSplit = priceSplit[0].split(':');
-                let sku = skuSplit[1];
-                console.log(`Product ${productNum} { Brand:` + brand + ", Name:" + name + ", Price:" + price + ", SKU:" + sku + " }");
-                console.log("");
-                productNum++;
-                // console.log(element[i]);
+                // urlEl = array of url's extracted
+                let urlEl = await page.evaluate(() => {
+                    return Array.from(document.querySelectorAll("#isp_search_results_container li .isp_product_image_wrapper a"), el => el.href);
+                });
+                // Extract data from textContent String for each element in Array
+                for(var i=0; i<element.length;i++){
+                    let nameSplit = element[i].split('-');
+                    let brand = nameSplit[0].trim();
+                    let name = nameSplit[1].trim();
+                    let priceSplit = element[i].split("$");
+                    let price;
+                    if(priceSplit.length === 4){
+                        price = parseFloat(priceSplit[2]);
+                    } else if(priceSplit.length === 2){
+                        price = parseFloat(priceSplit[1]);
+                    } else{
+                        price = 0;
+                    }
+                    let skuSplit = priceSplit[0].split(':');
+                    let sku = skuSplit[1].trim();
+                    if(brand === 'Miele'){
+                        skuSplit = element[i].split("MIELE");
+                        sku = skuSplit[0].split("-");
+                        sku = sku[2].trim();
+                    }
+                    console.log(`Product ${productNum} { Brand:` + brand + ", Name:" + name + ", Price:" + price + ", SKU:" + sku + " }");
+                    console.log(urlEl[i]);
+                    console.log("");
+                    productNum++;
+
+                    //console.log(element[i]);
+                }
+
+                // Break if only 1 page
+                let pageEl = await page.evaluate(() => {
+                    return Array.from(document.querySelectorAll("#isp_pagination_anchor > ul li"), el => el.textContent);
+                });
+                if(pageEl.length === 0){
+                    break;
+                }
+
+                pageNum++; // Increment page
+                await timer(1.4); // Timer for 1.4s
+            }catch(e){
+                console.log(e);
+                await timer(4);
             }
-            pageNum++;
         }
     }
     page.close();
     browser.close();
 }
-
+//scrape();
 // 43 collections
 
 // Function runs through goemans.com/sitemap.xml to extract all of product URL's
@@ -99,27 +126,6 @@ async function sitemap(){
         console.log("Scraped URLs");
         await browser.close();
         scrape(); // Run Scrape URL Function
-        //test();
-    }
-}
-
-// const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
-// async function runScrape(){
-//     browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
-//     try {
-//         for(var i=0; i<urlArray.length+1;i++){
-//             scrape(urlArray[i].url, urlArray[i].lastmod, i);
-//             await timer(10); // 1.4 second delay
-//         }
-//         await browser.close();
-//     }
-//     catch(e){
-//         console.log(e)
-//     }
-// }
-function test(){
-    for(var i =0; i<urlArray.length+1; i++){
-        console.log(urlArray[i]);
     }
 }
 

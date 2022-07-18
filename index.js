@@ -2,6 +2,9 @@ const express = require("express");
 const session = require("express-session");
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
+const fs = require('fs');
+const popup = require('node-popup');
+
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost/pricescraper",
   // ssl: {
@@ -10,9 +13,13 @@ var pool = new Pool({
 })
 
 //imports scraping scripts 
-const { scrapGoemans } = require("./public/scrapGoemans.js");
+const { scrapGoemans, getCount } = require("./public/scrapGoemans.js");
 const { scrapCanAppl } = require("./public/scrapCanAppl.js");
 const { scrapMidAppl } = require("./public/scrapMidAppl.js");
+
+var goemansRunning = false;
+var canApplRunning = false;
+var midApplRunning = false;
 
 const path = require("path");
 const PORT = process.env.PORT || 5000;
@@ -171,21 +178,45 @@ app.get("/scrape", async(req,res) => {
     res.redirect("/")
 })
 
-app.get("/scrape:id", async(req,res) => {
-  var id = req.params.id;
-  console.log(id);
-  if(id == 'goemans'){
-    scrapGoemans(106);
-    await res.render('pages/scraped-data')
-  } else if (id == 'canAppl'){
+app.get("/scrape/:id/:id2/:id3", async(req,res) => {
+  var id = req.params.id.toString();
+  var id2 = req.params.id2.toString();
+  var id3 = req.params.id3.toString();
+
+  if(id == 'goemans' || id2 == 'goemans' || id3 == 'goemans'){
+    if(goemansRunning){
+      console.log("Goeman's is running");
+    }else{
+      goemansRunning = true;
+      scrapGoemans(106);
+    }
+  }
+  if (id == 'canAppl' || id2 == 'canAppl' || id3 == 'canAppl'){
     scrapCanAppl();
     await res.render('pages/scraped-data')
-  } else if (id == 'midAppl'){
+  }
+  if (id == 'midAppl' || id2 == 'midAppl' || id3 == 'midAppl'){
     scrapMidAppl();
     await res.render('pages/scraped-data')
-  } else{
-    res.render("pages/urlPage");
   }
 })
+
+app.get("/progress", async(req,res) =>{
+  // fs.readFile('test', 'utf8', function(err, data){
+  //   // Display the file content
+  //   res.send(data);
+  // });
+  res.send(getCount().toString());
+})
+
+app.get("/running", async(req,res) =>{
+  res.send(`${goemansRunning}`);
+})
+
+app.get("/goemanSuccess", async(req,res) =>{
+  goemansRunning = false;
+  console.log("Goemans Success");
+})
+
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
