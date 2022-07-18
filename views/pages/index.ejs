@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include ("../partials/header.ejs") %>
+    <title>Login</title>
+    <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
+    <link rel="stylesheet" href="/stylesheets/login.css" />
+  </head>
+
+
+  <body>
+    <main>
+
+      <form class="fullform" action="/login" method="post">
+        <fieldset>
+
+          <label class="loginlabel">LOGIN</label><br />
+
+          <label class="inputlabel">Username</label></br>
+          <input
+            type="text"
+            class="inputname"
+            id="uname"
+            name="f_uname"
+          /><br />
+
+          <label class="inputlabel">Password</label></br>
+
+        <input
+            type="password"
+            class="inputname"
+            id="pwd"
+            name="f_pwd"
+          /><br />
+
+          <input
+            type="submit"
+            class="inputsubmit"
+            value="Submit"
+            name="f_sub"
+          /></fieldset></br>
+
+        </fieldset>
+      </form>
+      
+    </main>
+  </body>
+</html>

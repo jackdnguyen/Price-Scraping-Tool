@@ -1,0 +1,102 @@
+.logoutform {
+    display: inline;
+  }
+  #button {
+    border-style: solid;
+    border-width: 0.2rem;
+    border-color: black;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    margin-top: -0.5rem;
+    font-size: 0;
+  }
+  
+  #url {
+    font-size: 2rem;
+    padding: 3rem;
+  }
+  
+  #logout {
+    float: right;
+    font-size: 2rem;
+    padding: 3rem;
+  }
+  
+  #scrapedData {
+    font-size: 2rem;
+    padding: 3rem;
+  }
+  
+
+@media (min-width: 90rem) {
+    #price {
+      margin: 15rem 20rem;
+      padding: 5rem 25rem;
+      border-style: solid;
+      border-width: 0.2rem;
+      border-color: black;
+    }
+}
+  
+  h1 {
+    font-size: 3rem;
+    margin-bottom: 4rem;
+    margin-left: 2rem;
+  }
+  
+  #urlTable {
+    margin: 0.5rem 0 0 4.5rem;
+    font-size: 2rem;
+  }
+  
+  #lowerButtons {
+    font-size: 2rem;
+    float: right;
+  }
+  
+  #plus {
+    font-size: 2rem;
+  }
+  
+  #scrape {
+    font-size: 2rem;
+    margin-top: 2rem;
+  }
+  
+  #urlInput {
+    width: 9.5rem;
+    padding-right: 1rem;
+  }
+
+  th {
+    padding-left: 1rem;
+  }
+  
+  td {
+    width: 10rem;
+    padding-left: 1rem;
+  }
+  
+  input {
+    width: 50rem;
+    height: 5rem;
+    margin-top: 1rem;
+    padding: 1rem;
+  }
+  
+  select {
+    width: 23rem;
+    height: 5rem;
+    margin-top: 1rem;
+  }
+  
+  /* #text1 {
+    position: absolute;
+    left: 33vw;
+  } */
+  
+  /* #text2 {
+    position: relative;
+    left: 0;
+  } */
+  

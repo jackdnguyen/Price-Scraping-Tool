@@ -1,0 +1,86 @@
+.filter {
+  position: absolute;
+  margin-left: 30px;
+  margin-top: 1%;
+  float: left;
+  width: 550px;
+}
+.profileInput2 {
+  width: 300px;
+}
+.Afilter {
+  margin-left: 30px;
+  margin-top: 1%;
+  float: left;
+  margin-top: 350px;
+  position: relative;
+  width: 550px;
+}
+.container {
+  float: right;
+  margin-right: 5%;
+}
+.title {
+  padding-left: 20%;
+  font-size: 35px;
+  font-weight: bold;
+}
+.Atitle {
+  padding-left: 10%;
+  font-size: 35px;
+  font-weight: bold;
+}
+.lowhighLabel {
+  font-size: large;
+}
+.filtersubmit {
+  width: 300px;
+}
+.filtersku {
+  width: 300px;
+}
+.lowhighInput {
+  width: 300px;
+}
+.fullform {
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 200px;
+  width: 17.5%;
+  padding: 10px;
+
+  text-align: center;
+}
+.inputname {
+  width: 300px;
+  padding: 10px;
+}
+.loginlabel {
+  margin-bottom: 30px;
+  text-align: center;
+
+  font-size: large;
+  padding: 10px;
+}
+.inputlabel {
+  margin-top: 20px;
+  float: left;
+  font-size: medium;
+}
+.inputsubmit {
+  margin-top: 20px;
+
+  text-align: center;
+  padding: 10px;
+  float: right;
+}
+
+table {
+  margin-top: 2rem;
+  border: 1px solid black;
+}
+td,
+th {
+  padding: 2rem;
+  border: 1px solid black;
+}

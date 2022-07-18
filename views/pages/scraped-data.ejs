@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <%- include ("../partials/header.ejs") %>
+  <title>Scraped Data</title>
+  <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
+  <link rel="stylesheet" href="/stylesheets/main.css" /> 
+  <link rel="stylesheet" href="/stylesheets/login.css" />
+  <link rel="stylesheet" href="/stylesheets/urlPage.css" />
+</head>
+
+<body>
+  <div id="main">
+    <div id="button">
+      <form class="logoutform" action="/home">
+        <button id="url">URL</button>
+      </form>
+
+      <form class="logoutform" action="/display">
+        <button id="scrapedData">Scraped Data</button>
+      </form>
+
+      <form class="logoutform" action="/logout?_method=DELETE" method="POST">
+        <button id="logout" method="POST" type="submit">Log Out</button>
+      </form>
+    </div>
+    <div class="container">
+        <h1>Scraped Data</h1>
+        <table id="displayData">
+          <tr>
+            <th>Company name</th>
+            <th>Link to scraped data</th>
+            <th>Last checked</th>
+          </tr>
+          <tr>
+            <th>Canadian Appliance</th>
+            <th><form action="/canApp">
+              <button>Link</button>
+            </form></th>
+            <th>Last checked</th>
+          </tr>
+          <tr>
+            <th>Goemans</th>
+            <th><form action="/goemans">
+              <button>Link</button>
+            </form></th>
+            <th>Last checked</th>
+          </tr>
+          <tr>
+            <th>Midland Appliance</th>
+            <th><form action="/midAppl">
+              <button>Link</button>
+            </form></th>
+            <th>Last checked</th>
+          </tr>
+        </table>
+      </div>
+</body>
+
+</html>
