@@ -5,8 +5,8 @@
     <%- include ("../partials/header.ejs") %>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link href="/stylesheets/urlPage.css" rel="stylesheet" type="text/css" />
-    <script type="text/javascript" src="scraper.js" async></script>
-    <script type="text/javascript" src="scraper2.js" aync></script>
+    <!-- <script type="text/javascript" src="scraper.js" async></script>
+    <script type="text/javascript" src="scraper2.js" aync></script> -->
     <script type="text/javascript" src="display.js" async></script>
     <title>Price Scraping Tool</title>
   </head>
@@ -30,31 +30,36 @@
           <table id="urlTable">
             <thead>
               <tr>
-                <th id="text1">Homepage Url</th>
+                <!-- <th id="text1">Homepage Url</th> -->
                 <th id="text2">Profile</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td class="urlInput">
-                  <input type="text" class="urlInput" id="name" name="uname" />
-                </td>
+                <!-- <td class="urlInput">
+                  <input type="text" class="urlInput" id="name" name="uname" placeholder="Homepage Url"/ onchange="handleInput(this)"/>
+                </td> -->
                 <td class="profileInput">
                   <select class="profileInput">
                     <option selected value="default">Select a Company</option>
                     <!-- <option value="midland">Midland Appliances</option> -->
                     <option value="canAppl">Canadian Appliances</option>
                     <option value="goemans">Goemans</option>
+                    <option value="midAppl">Midland Appliance</option>
                   </select>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <div id="lowerButtons">
+                    <form id="scraper" action="/scrape" method="get">
+                      <button id="scrape">Scrape</button>
+                    </form>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
-          <div id="lowerButtons">
-            <form id="scraper" action="/scrape" method="get">
-              <button id="scrape">Scrape</button>
-            </form>
-          </div>
         </div>
       </div>
     </div>
