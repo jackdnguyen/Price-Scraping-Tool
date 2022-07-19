@@ -5,6 +5,7 @@ const { Pool } = require('pg')
 //create table goemans(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
 //create table midAppl(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
 //select exists (select 1 from canAppl where sku='000' LIMIT 1);
+var counter = 0;
 
 var pool = new Pool({
     connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost/pricescraper",
@@ -142,6 +143,7 @@ async function scraper(browser, link, index, lMod) {
             else{
                 await pool.query(insertQuery)
             }
+            counter++;
             console.log(index)
             console.log(data)
             await page.close()
@@ -153,6 +155,9 @@ async function scraper(browser, link, index, lMod) {
     }
 }
 
-module.exports = { scrapMidAppl };
+function midApplCounter(){
+    return counter;
+}
+module.exports = { scrapMidAppl, midApplCounter };
 
 // scrapMidAppl();
