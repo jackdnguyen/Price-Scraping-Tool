@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html> -->
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -7,7 +7,9 @@
     <link href="/stylesheets/urlPage.css" rel="stylesheet" type="text/css" />
     <!-- <script type="text/javascript" src="scraper.js" async></script>
     <script type="text/javascript" src="scraper2.js" aync></script> -->
-    <script type="text/javascript" src="display.js" async></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script type="text/javascript" src="displayURL.js" async></script>
+
     <title>Price Scraping Tool</title>
   </head>
   <body>
@@ -35,26 +37,46 @@
               </tr>
             </thead>
             <tbody>
-              <tr>
+              <tr id="row">
                 <!-- <td class="urlInput">
                   <input type="text" class="urlInput" id="name" name="uname" placeholder="Homepage Url"/ onchange="handleInput(this)"/>
                 </td> -->
-                <td class="profileInput">
-                  <select class="profileInput">
-                    <option selected value="default">Select a Company</option>
-                    <!-- <option value="midland">Midland Appliances</option> -->
-                    <option value="canAppl">Canadian Appliances</option>
-                    <option value="goemans">Goemans</option>
-                    <option value="midAppl">Midland Appliance</option>
-                  </select>
-                </td>
+                <div>
+                  <td>
+                      <select class="profileInput">
+                        <option selected value="default">Select a Company</option>
+                        <!-- <option value="midland">Midland Appliances</option> -->
+                        <option value="canAppl">Canadian Appliances</option>
+                        <option value="goemans">Goemans</option>
+                        <option value="midAppl">Midland Appliance</option>
+                      </select>
+                  </td>
+                  <td>
+                      <div class="col-xs-12">
+                        <progress style="width:100%" value="0" max="100" id="progBar" name ="progBar">
+                            <span id="calcProgress">
+                                <!-- Fallback goes here  -->
+                            </span>
+                        </progress>
+                      </div>
+                  </td>
+                  <td>
+                    <div id="progUpdate" class="col-xs-12" name ="progUpdate">
+                      <!-- Product Message -->
+                    </div>
+                  </td>
+                </div>
               </tr>
               <tr>
                 <td>
+                  <button id = "add" onclick="cloneRow()">Add</button>
+                </td>
+                <td>
                   <div id="lowerButtons">
-                    <form id="scraper" action="/scrape" method="get">
-                      <button id="scrape">Scrape</button>
+                    <form id="scraper" action="/scrape/default/default/default" method="get">
+                      <button id="scrapeButton">Scrape</button>
                     </form>
+                    <button id="progButton" onclick="getProg()">Check Progress</button>
                   </div>
                 </td>
               </tr>

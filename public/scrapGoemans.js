@@ -2,19 +2,22 @@
 // Purpose: Scrapes data from goemans.com
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
+const fs = require('fs');
+const { get } = require('http');
 
+//const myFunction = require("./display");
 const urlArray = [];
 const results = [];
 
 var pool = new Pool({
-    connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
+    connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost/pricescraper",
     // ssl: {
     //     rejectUnauthorized: false
     //   }
 })
 
 let browser;
-
+var counter = 0;
 // Function Parameters: URL, Last Modified Date, Product num
 // Scrapes Price, SKU, Product Name from Product URL
 async function scrapeProduct(url, lastmod, i) {
@@ -73,7 +76,7 @@ async function scrapeProduct(url, lastmod, i) {
             var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '${lastmod}')`
             var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='${lastmod}' WHERE sku='${obj.sku}'`
             var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${obj.sku}' LIMIT 1)`)
-
+            //await pool.query(insertQuery)
             if(getDbSku.rows[0].exists)
             {
                 await pool.query(updateQuery)
@@ -81,6 +84,14 @@ async function scrapeProduct(url, lastmod, i) {
             else{
                 await pool.query(insertQuery)
             }
+            counter++;
+            // myFunction(counter);
+            // fs.writeFile("./test", `${counter}`, function(err) {
+            //     if(err) {
+            //         return console.log(err);
+            //     }
+            //     console.log("The file was saved!");
+            // }); 
 
             await page.close();
         } catch(e){
@@ -143,20 +154,21 @@ const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout
 async function scrape(){
     browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
     try {
-        for(var i=0; i<urlArray.length+1;i++){
+        for(var i=0; i<51;i++){
             scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
             await timer(1400); // 1.4 second delay
         }
+        await(timer(4000));
         await browser.close();
     }
     catch(e){
         console.log(e)
+    }finally{
+        get("http://localhost:5000/goemanSuccess");
     }
 }
+function getCount(){
+    return counter;
+}
 
-// export async function scrapGoemans(index);
-
-module.exports = { scrapGoemans }
-
-
-
+module.exports = { scrapGoemans, getCount };

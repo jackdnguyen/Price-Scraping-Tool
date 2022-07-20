@@ -2,19 +2,30 @@ const express = require("express");
 const session = require("express-session");
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
+const fs = require('fs');
+
 var pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
+  connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost/pricescraper",
   // ssl: {
   //     rejectUnauthorized: false
   //   }
 })
 
 //imports scraping scripts 
-const { scrapGoemans } = require("./public/scrapGoemans.js");
-const { scrapCanAppl } = require("./public/scrapCanAppl.js");
-const { scrapMidAppl } = require("./public/scrapMidAppl.js");
+const { scrapGoemans, getCount } = require("./public/scrapGoemans.js");
+const { scrapCanAppl, canApplCounter } = require("./public/scrapCanAppl.js");
+const { scrapMidAppl, midApplCounter } = require("./public/scrapMidAppl.js");
+
+var goemansRunning = false;
+var canApplRunning = false;
+var midApplRunning = false;
+
+var urlPageData = ["default","default","default", 1];
+// Counters for CanAppl, Goemans, MidLands respectively
+var progBar = [0, 0, 0];
 
 const path = require("path");
+const { url } = require("inspector");
 const PORT = process.env.PORT || 5000;
 
 
@@ -89,6 +100,8 @@ app.get("/dashboard", (req, res) => {
     res.redirect("/");
 });
 
+
+
 //scraped page get
 app.get("/display", async (req, res) => {
   if (req.session.user) {
@@ -120,6 +133,30 @@ app.get("/display-data", async (req, res) => {
   else 
     res.redirect("/");
 });
+
+
+//sku search
+app.post("/skuwSearch", async (req, res) => {
+  if (req.session.user) {
+    var skuName = req.body.Sku_name;
+    console.log(skuName);
+    //var allusersquery = `SELECT (c.name, c.price, c.url, c.lpmod,m.name, m.price, m.url, m.lpmod, g.name, g.price, g.url, g.lpmod)fROM canAPPL c, Midappl m, goemans g where c.sku='MDG6400AW' or m.sku='MDG6400AW' or g.sku='MDG6400AW';`;
+
+    var allusersquery =
+      "SELECT * fROM canAppl where sku='" +
+      skuName +
+      "' union sELECT * fROM midappl where sku='" +
+      skuName +
+      "' union SELECT * fROM goemans where sku='" +
+      skuName +
+      "';";
+    const result = await pool.query(allusersquery);
+    const data = { results: result.rows };
+    console.log(data);
+    res.render("pages/skuSearch", data);
+  } else res.redirect("/");
+});
+
 
 //url page get
 app.get("/home", (req, res) => {
@@ -163,7 +200,7 @@ app.get('/midAppl', async (req, res)=> {
     res.redirect("/");
 });
 
-app.get("/scrape", async(req,res) => {
+app.get("/scrape/default/default/default", async(req,res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
   } 
@@ -171,21 +208,54 @@ app.get("/scrape", async(req,res) => {
     res.redirect("/")
 })
 
-app.get("/scrape:id", async(req,res) => {
-  var id = req.params.id;
-  console.log(id);
-  if(id == 'goemans'){
-    scrapGoemans(106);
-    await res.render('pages/scraped-data')
-  } else if (id == 'canAppl'){
-    scrapCanAppl();
-    await res.render('pages/scraped-data')
-  } else if (id == 'midAppl'){
-    scrapMidAppl();
-    await res.render('pages/scraped-data')
-  } else{
-    res.render("pages/urlPage");
+app.get("/scrape/:id/:id2/:id3/:id4", async(req,res) => {
+  var id = req.params.id.toString();
+  var id2 = req.params.id2.toString();
+  var id3 = req.params.id3.toString();
+  numRows = req.params.id4.toString();
+
+  urlPageData[0] = id;
+  urlPageData[1] = id2;
+  urlPageData[2] = id3;
+  urlPageData[3] = numRows;
+
+  if(id == 'goemans' || id2 == 'goemans' || id3 == 'goemans'){
+    if(goemansRunning){
+      console.log("Goeman's is running");
+    }else{
+      goemansRunning = true;
+      scrapGoemans(106);
+      //numRows++;
+    }
   }
+  if (id == 'canAppl' || id2 == 'canAppl' || id3 == 'canAppl'){
+    scrapCanAppl();
+    //numRows++;
+  }
+  if (id == 'midAppl' || id2 == 'midAppl' || id3 == 'midAppl'){
+    scrapMidAppl();
+    //numRows++;
+  }
+})
+
+app.get("/progress", async(req,res) =>{
+  progBar[0] = canApplCounter();
+  progBar[1] = getCount();
+  progBar[2] = midApplCounter();
+  res.send(`${progBar}`);
+})
+
+app.get("/running", async(req,res) =>{
+  res.send(`${goemansRunning}`);
+})
+
+app.get("/goemanSuccess", async(req,res) =>{
+  goemansRunning = false;
+  console.log("Goemans Success");
+})
+app.get("/urlPageData", async(req,res) =>{
+  console.log(urlPageData);
+  res.send(`${urlPageData}`);
 })
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));

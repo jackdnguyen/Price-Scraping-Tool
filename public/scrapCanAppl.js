@@ -4,13 +4,14 @@ const { Pool } = require('pg')
 //create table canAppl(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT);
 //create table goemans(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
 //select exists (select 1 from canAppl where sku='000' LIMIT 1);
+var counter = 0;
 
 var pool = new Pool({
-    connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
+    connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost/pricescraper",
     // ssl: {
     //     rejectUnauthorized: false
     //   }
-})
+  })
 
 let browser;
 
@@ -131,6 +132,7 @@ async function scraper(browser, link, index) {
             else{
                 await pool.query(insertQuery)
             }
+            counter++;
             console.log(index)
             console.log(data)
             await page.close()
@@ -141,6 +143,9 @@ async function scraper(browser, link, index) {
     }
 }
 
+function canApplCounter(){
+    return counter;
+}
 
-module.exports = {scrapCanAppl};
+module.exports = {scrapCanAppl, canApplCounter};
 // scrapCanAppl();

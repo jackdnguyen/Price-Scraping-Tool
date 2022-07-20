@@ -51,7 +51,7 @@
   
   #lowerButtons {
     font-size: 2rem;
-    float: right;
+    /* float: right; */
   }
   
   #plus {
@@ -73,10 +73,11 @@
   }
   
   td {
-    width: 10rem;
+    width: 20rem;
     padding-left: 1rem;
+    padding-bottom: 2rem;
   }
-  
+
   input {
     width: 50rem;
     height: 5rem;
@@ -90,6 +91,26 @@
     margin-top: 1rem;
   }
   
+  .col-xs-12 {
+    padding-top: 1.5rem;
+  }
+  .profileInput{
+    width:40rem;
+  }
+  #lowerButtons{
+    display:table;
+  }
+  #lowerButtons > #scraper, #lowerButtons > #progButton {
+    display:table-cell;vertical-align:middle;
+    padding-right: 1rem;
+  }
+  #progButton{
+    white-space: nowrap;
+    text-align: center;
+  }
+  #row{
+    display:ruby-base-container;
+  }
   /* #text1 {
     position: absolute;
     left: 33vw;
