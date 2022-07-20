@@ -24,20 +24,19 @@
           <button id="logout" method="POST" type="submit">Log Out</button>
         </form>
       </div>
-      <div class='filter'>
-        <header class="title">Filter</header>
-        <form action="skuwSearch" method="post">
-          <input name="Sku_name" id="Sku_name" class="filtersku" type="text" placeholder="SKU Number">
-          <input class="filtersubmit" type="submit">
-        </form>
-       
-        
-      </div>
       
     <div class="container">
       <form action="/company-name" method="POST">
         <!-- <h2>Canadian Appliance</h2> -->
       </form>
+
+      <div class='filter'>
+        <header class="title">Filter</header>
+        <form action="skuwSearch" method="post">
+          <input name="Sku_name" id="Sku_name" class="filtersku" type="text" placeholder="SKU Number">
+          <input class="filtersubmit" type="submit">
+        </form>        
+      </div>
 
       <table id="displayData">
         <tr>
@@ -48,20 +47,22 @@
           <th>Url</th>
           <th>Last Price Updated</th>
         </tr>
-        <form id="display-data" action="/display-data" method="POST">
+        <form id="display-data" action="/display-all-data" method="POST">
           <% results.forEach(function(r) { %>
-          <tr>
-              <td><%=r.id%></td>
-              <td><%=r.sku%></td>
-              <td><%=r.name%></td>
-              <td><%=r.price%></td>
-              <td><%=r.url%></td>
-              <td><%=r.lpmod%></td>
-            </form>
-          </tr>
-          <% }); %>
+            <tr>
+                <td><%=r.id%></td>
+                <td><%=r.sku%></td>
+                <td><%=r.name%></td>
+                <td><%=r.price%></td>
+                <td><%=r.url%></td>
+                <td><%=r.lpmod%></td>
+              </form>
+            </tr>
+          <%}); %>
       </form>
 
+
+      </table>
     </div>
 
     </body>

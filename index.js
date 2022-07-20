@@ -126,7 +126,7 @@ app.get("/display", async (req, res) => {
 
 app.get("/display-data", async (req, res) => {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
     const result = await pool.query(allusersquery)
     const data = { results: result.rows }
     res.render('pages/db', data)
@@ -137,23 +137,61 @@ app.get("/display-data", async (req, res) => {
 
 
 //sku search
+app.get('/all', async(req, res)=>{
+  if (req.session.user) {
+    var selectQuery1 = await pool.query(`SELECT * FROM midAppl`);
+    var selectQuery2 = await pool.query(`SELECT * FROM midAppl`);
+    var selectQuery3 = await pool.query(`SELECT * FROM midAppl`);
+
+    var selectQuery = []
+    selectQuery.push(selectQuery1);
+    selectQuery.push(selectQuery2);
+    selectQuery.push(selectQuery3);
+    // console.log(searchSku);
+    const result = selectQuery;
+    const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows);
+
+    const data = { results: mergedData}
+    // const data2 = { results: result[1].rows}
+    // const data3 = { results: result[2].rows}
+    // console.log(data1);
+    res.render('pages/skuSearch', data)
+  }
+  else
+    res.redirect('/')
+})
+
+
+
 app.post("/skuwSearch", async (req, res) => {
   if (req.session.user) {
     var skuName = req.body.Sku_name;
     console.log(skuName);
     //var allusersquery = `SELECT (c.name, c.price, c.url, c.lpmod,m.name, m.price, m.url, m.lpmod, g.name, g.price, g.url, g.lpmod)fROM canAPPL c, Midappl m, goemans g where c.sku='MDG6400AW' or m.sku='MDG6400AW' or g.sku='MDG6400AW';`;
 
-    var allusersquery =
-      "SELECT * fROM canAppl where sku='" +
-      skuName +
-      "' union sELECT * fROM midappl where sku='" +
-      skuName +
-      "' union SELECT * fROM goemans where sku='" +
-      skuName +
-      "';";
-    const result = await pool.query(allusersquery);
-    const data = { results: result.rows };
-    console.log(data);
+    // var allusersquery =
+    //   "SELECT * fROM canAppl where sku='" +
+    //   skuName +
+    //   "' union sELECT * fROM midappl where sku='" +
+    //   skuName +
+    //   "' union SELECT * fROM goemans where sku='" +
+    //   skuName +
+    //   "';";
+    var searchQuery1 = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
+    var searchQuery2 = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
+    var searchQuery3 = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
+
+    var searchSku = []
+    searchSku.push(searchQuery1);
+    searchSku.push(searchQuery2);
+    searchSku.push(searchQuery3);
+    // console.log(searchSku);
+    const result = searchSku;
+
+    const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows);
+
+    const data = { results: mergedData}
+
     res.render("pages/skuSearch", data);
   } else res.redirect("/");
 });

@@ -57,6 +57,19 @@ async function scrape(){
                         sku = skuSplit[0].split("-");
                         sku = sku[2].trim();
                     }
+
+                    //             // Database Queries
+                    // var insertQuery = `INSERT INTO coastAppl(sku,name,price,url,lpmod) VALUES('${sku}','${name}',${price},'${url}', '${lastmod}')`
+                    // var updateQuery = `UPDATE coastAppl SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='${lastmod}' WHERE sku='${obj.sku}'`
+                    // var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM coastAppl WHERE sku='${obj.sku}' LIMIT 1)`)
+                    // //await pool.query(insertQuery)
+                    // if(getDbSku.rows[0].exists)
+                    // {
+                    //     await pool.query(updateQuery)
+                    // }
+                    // else{
+                    //     await pool.query(insertQuery)
+                    // }
                     console.log(`Product ${productNum} { Brand:` + brand + ", Name:" + name + ", Price:" + price + ", SKU:" + sku + " }");
                     console.log(urlEl[i]);
                     console.log("");
