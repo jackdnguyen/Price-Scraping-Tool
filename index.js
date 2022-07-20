@@ -101,7 +101,7 @@ app.get("/display", async (req, res) => {
     res.redirect("/");
 });
 
-// //scraped page post
+//scraped page post
 // app.post("/display", async (req, res) => {
 //   //res.render("pages/display");
 //   res.render("pages/scraped-data");
