@@ -73,8 +73,8 @@ async function scrapeProduct(url, lastmod, i) {
             results.push(obj); // Push Obj into results array
 
             // Database Queries
-            var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '${lastmod}')`
-            var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='${lastmod}' WHERE sku='${obj.sku}'`
+            var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '')`
+            var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='' WHERE sku='${obj.sku}'`
             var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${obj.sku}' LIMIT 1)`)
             //await pool.query(insertQuery)
             if(getDbSku.rows[0].exists)
@@ -85,14 +85,6 @@ async function scrapeProduct(url, lastmod, i) {
                 await pool.query(insertQuery)
             }
             counter++;
-            // myFunction(counter);
-            // fs.writeFile("./test", `${counter}`, function(err) {
-            //     if(err) {
-            //         return console.log(err);
-            //     }
-            //     console.log("The file was saved!");
-            // }); 
-
             await page.close();
         } catch(e){
             console.log(e);

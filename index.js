@@ -12,9 +12,10 @@ var pool = new Pool({
 })
 
 //imports scraping scripts 
-const { scrapGoemans, getCount } = require("./public/scrapGoemans.js");
+// const { scrapGoemans, getCount } = require("./public/scrapGoemans.js");
 const { scrapCanAppl, canApplCounter } = require("./public/scrapCanAppl.js");
 const { scrapMidAppl, midApplCounter } = require("./public/scrapMidAppl.js");
+const { scrapGoemans, goemansCount } = require("./public/goemansv2.js");
 
 var goemansRunning = false;
 var canApplRunning = false;
@@ -198,7 +199,8 @@ app.get("/scrape/:id/:id2/:id3/:id4", async(req,res) => {
       console.log("Goeman's is running");
     }else{
       goemansRunning = true;
-      scrapGoemans(106);
+      scrapGoemans();
+      // scrape(0);
       //numRows++;
     }
   }
@@ -214,7 +216,7 @@ app.get("/scrape/:id/:id2/:id3/:id4", async(req,res) => {
 
 app.get("/progress", async(req,res) =>{
   progBar[0] = canApplCounter();
-  progBar[1] = getCount();
+  progBar[1] = goemansCount();
   progBar[2] = midApplCounter();
   res.send(`${progBar}`);
 })
