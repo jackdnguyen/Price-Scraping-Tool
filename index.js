@@ -106,7 +106,7 @@ app.get("/dashboard", (req, res) => {
 //scraped page get
 app.get("/display", async (req, res) => {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
     const result = await pool.query(allusersquery)
     const data = { results: result.rows }
     res.render('pages/scraped-data', data)
