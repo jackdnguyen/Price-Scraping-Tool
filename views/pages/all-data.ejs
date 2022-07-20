@@ -2,7 +2,7 @@
   <html lang="en-us">
     <head>
       <%- include ("../partials/header.ejs") %>
-      <title>Company's Data</title>
+      <title>All Company's Data</title>
       <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
       <link rel="stylesheet" href="/stylesheets/login.css" />
       <link rel="stylesheet" href="/stylesheets/urlPage.css" />
@@ -31,10 +31,8 @@
       </form>
 
       <div class='filter'>
-        <header class="title">Filter</header>
         <form action="skuwSearch" method="post">
-          <input name="Sku_name" id="Sku_name" class="filtersku" type="text" placeholder="SKU Number">
-          <input class="filtersubmit" type="submit">
+          <input name="Sku_name" id="Sku_name" class="filtersku" type="text" placeholder="SKU Number" onchange="form.submit()">
         </form>        
       </div>
 

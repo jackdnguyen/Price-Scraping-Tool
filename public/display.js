@@ -15,6 +15,10 @@ var getProfile = document.getElementsByTagName("select")[0].addEventListener('ch
         scrapeForm.action = "/scrapemidAppl"
         console.log(scrapeForm.action);
     }  
+    else if(value == 'coastAppl'){
+        scrapeForm.action = '/scrapecoastAppl'
+        console.log(scrapeForm.action)
+    }
     else if(value == 'default'){
         scrapeForm.action = "/scrape"
         console.log(scrapeForm.action);

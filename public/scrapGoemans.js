@@ -155,7 +155,7 @@ const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout
 async function scrape(){
     browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
     try {
-        for(var i=0; i<51;i++){
+        for(var i=0; i<urlArray.length + 1;i++){
             scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
             await timer(1400); // 1.4 second delay
         }

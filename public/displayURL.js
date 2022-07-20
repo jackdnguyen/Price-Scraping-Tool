@@ -4,7 +4,7 @@
 var profileArr = ["default","default","default", 1];
 var options = ["default", "canAppl", "goemans", "midAppl"];
 var numRows = 1;
-var totalCases = 50;
+var totalCases = 1000;
 var scrapeForm = document.getElementById("scraper");
 
 var getProfile3;
