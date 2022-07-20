@@ -5,12 +5,13 @@ const { Pool } = require('pg')
 const fs = require('fs');
 const { get } = require('http');
 
+
 //const myFunction = require("./display");
 const urlArray = [];
 const results = [];
 
 var pool = new Pool({
-    connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost/pricescraper",
+    connectionString: process.env.DATABASE_URL,
     // ssl: {
     //     rejectUnauthorized: false
     //   }

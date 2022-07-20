@@ -1,3 +1,4 @@
+const tempEnv = require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const puppeteer = require('puppeteer');
@@ -5,7 +6,7 @@ const { Pool } = require('pg')
 const fs = require('fs');
 
 var pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost/pricescraper",
+  connectionString: process.env.DATABASE_URL,
   // ssl: {
   //     rejectUnauthorized: false
   //   }
@@ -26,7 +27,7 @@ var progBar = [0, 0, 0];
 
 const path = require("path");
 const { url } = require("inspector");
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 
 
 app = express();
