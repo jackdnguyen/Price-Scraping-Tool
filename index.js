@@ -1,21 +1,42 @@
+const tempEnv = require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
+const fs = require('fs');
+var cors = require('cors') //cross-origin resources sharing
+
 var pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
-  ssl: {
-      rejectUnauthorized: false
-    }
+  connectionString: process.env.DATABASE_URL,
+  // ssl: {
+  //     rejectUnauthorized: false
+  //   }
 })
 
+//imports scraping scripts 
+const { scrapGoemans, getCount } = require("./public/scrapGoemans.js");
+const { scrapCanAppl, canApplCounter } = require("./public/scrapCanAppl.js");
+const { scrapMidAppl, midApplCounter } = require("./public/scrapMidAppl.js");
+const { scrapCoastAppl, coastApplCounter } = require("./public/scrapCoastAppl");
+
+var goemansRunning = false;
+var canApplRunning = false;
+var midApplRunning = false;
+
+var urlPageData = ["default","default","default", 1];
+// Counters for CanAppl, Goemans, MidLands respectively
+var progBar = [0, 0, 0];
+
 const path = require("path");
-const PORT = process.env.PORT || 5000;
-//const PORT = process.env.PORT
+const { url } = require("inspector");
+const e = require("express");
+const PORT = process.env.PORT;
+
 
 app = express();
 
 app.use(express.json());
+app.use('/', cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'))
 
@@ -65,7 +86,7 @@ app.post("/login", async (req, res) => {
   // invalid user
 });
 
-//logout post
+//-------------------------------------------------------------LOGGING OUT TAKES TO LOGIN WINDOW--------------------------------
 app.post("/logout", async (req, res) => {
   console.log("hello");
   res.redirect("/");
@@ -75,7 +96,7 @@ app.post("/logout", async (req, res) => {
 });
 
 
-//url page get
+//----------------------------------------------------------------RENDERS URL PAGE AFTER LOGIN----------------------------------------
 app.get("/dashboard", (req, res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
@@ -84,10 +105,12 @@ app.get("/dashboard", (req, res) => {
     res.redirect("/");
 });
 
-//scraped page get
+
+
+//-------------------------------------------------------------RENDERS SCRAPED_DATA PAGE----------------------------------------------
 app.get("/display", async (req, res) => {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
     const result = await pool.query(allusersquery)
     const data = { results: result.rows }
     res.render('pages/scraped-data', data)
@@ -96,18 +119,11 @@ app.get("/display", async (req, res) => {
     res.redirect("/");
 });
 
-// //scraped page post
-// app.post("/display", async (req, res) => {
-//   //res.render("pages/display");
-//   res.render("pages/scraped-data");
-//   res.redirect("/scraped-data");
-//   // else
-//   // invalid user
-// });
+//------------------------------------------------------RENDERS COMPANY"S DATA FROM DATABASE------------------------------------
 
 app.get("/display-data", async (req, res) => {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
     const result = await pool.query(allusersquery)
     const data = { results: result.rows }
     res.render('pages/db', data)
@@ -116,7 +132,108 @@ app.get("/display-data", async (req, res) => {
     res.redirect("/");
 });
 
-//url page get
+
+//------------------------------------------------------SKU FILTER------------------------------------------
+
+const allData = async ()=>{
+    var selectQuery1 = await pool.query(`SELECT * FROM midAppl ORDER BY id`);
+    var selectQuery2 = await pool.query(`SELECT * FROM goemans ORDER BY id`);
+    var selectQuery3 = await pool.query(`SELECT * FROM coastAppl ORDER BY id`);
+    var selectQuery4 = await pool.query(`SELECT * FROM canAppl ORDER BY id`);
+
+    var selectQuery = []
+    selectQuery.push(selectQuery1);
+    selectQuery.push(selectQuery2);
+    selectQuery.push(selectQuery3);
+    selectQuery.push(selectQuery4);
+    // console.log(searchSku);
+    const result = selectQuery;
+    const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
+
+  const data = { results: mergedData}
+  return data;  
+}
+
+app.get('/all', async(req, res)=>{
+  if (req.session.user) {
+    // var selectQuery1 = await pool.query(`SELECT * FROM midAppl ORDER BY id`);
+    // var selectQuery2 = await pool.query(`SELECT * FROM goemans ORDER BY id`);
+    // var selectQuery3 = await pool.query(`SELECT * FROM coastAppl ORDER BY id`);
+    // var selectQuery4 = await pool.query(`SELECT * FROM canAppl ORDER BY id`);
+
+    // var selectQuery = []
+    // selectQuery.push(selectQuery1);
+    // selectQuery.push(selectQuery2);
+    // selectQuery.push(selectQuery3);
+    // selectQuery.push(selectQuery4);
+    // // console.log(searchSku);
+    // const result = selectQuery;
+    // const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
+
+    const data = await allData()
+
+    res.render('pages/all-data', data)
+  }
+  else
+    res.redirect('/')
+})
+
+
+// app.get('/display-all-data', async(req, res)=>{
+//   if (req.session.user) {
+//     const data = await allData()
+
+//     res.render('pages/all-data', data)
+//   }
+//   else
+//     res.redirect('/')
+// })
+
+
+
+app.post("/skuwSearch", async (req, res) => {
+  if (req.session.user) {
+    var skuName = req.body.Sku_name;
+    console.log(skuName);
+    //var allusersquery = `SELECT (c.name, c.price, c.url, c.lpmod,m.name, m.price, m.url, m.lpmod, g.name, g.price, g.url, g.lpmod)fROM canAPPL c, Midappl m, goemans g where c.sku='MDG6400AW' or m.sku='MDG6400AW' or g.sku='MDG6400AW';`;
+
+    // var allusersquery =
+    //   "SELECT * fROM canAppl where sku='" +
+    //   skuName +
+    //   "' union sELECT * fROM midappl where sku='" +
+    //   skuName +
+    //   "' union SELECT * fROM goemans where sku='" +
+    //   skuName +
+    //   "';";
+    var searchQuery1 = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
+    var searchQuery2 = await pool.query(`SELECT * FROM goemans WHERE sku='${skuName}'`);
+    var searchQuery3 = await pool.query(`SELECT * FROM coastAppl WHERE sku='${skuName}'`);
+    var searchQuery4 = await pool.query(`SELECT * FROM canAppl WHERE sku='${skuName}'`);
+
+    var searchSku = []
+    searchSku.push(searchQuery1);
+    searchSku.push(searchQuery2);
+    searchSku.push(searchQuery3);
+    searchSku.push(searchQuery4);
+
+    const result = searchSku;
+
+    const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
+
+    const data = { results: mergedData}
+    if(skuName != "")
+      res.render("pages/all-data", data);
+    else{
+      const data2 = await allData();
+      res.render("pages/all-data", data2)
+    }
+  } 
+  else 
+    res.redirect("/");
+});
+
+
+//-------------------------------------------------RENDERS URL PAGE WHEN HOME BUTTON IS CLICKED---------------------------------------------------------------------
 app.get("/home", (req, res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
@@ -125,9 +242,11 @@ app.get("/home", (req, res) => {
     res.redirect("/");
 });
 
+//-----------------------------------------------RENDER INDIVIDUAL COMPANY"S DATA FROM SCRAPED DATA PAGE--------------------------------
+
 app.get('/canApp', async (req, res)=> {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
     const result = await pool.query(allusersquery)
     const data = { results: result.rows }
     res.render('pages/db', data)
@@ -138,7 +257,7 @@ app.get('/canApp', async (req, res)=> {
 
 app.get('/goemans', async (req, res)=> {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM goemans ORDER BY name`;
+    var allusersquery = `SELECT * FROM goemans ORDER BY id`;
     const result = await pool.query(allusersquery)
     const data = { results: result.rows }
     res.render('pages/db', data)
@@ -147,278 +266,89 @@ app.get('/goemans', async (req, res)=> {
     res.redirect("/");
 });
 
-app.get("/scrape", async(req,res) => {
+app.get('/midAppl', async (req, res)=> {
+  if (req.session.user) {
+    var allusersquery = `SELECT * FROM midAppl ORDER BY id`;
+    const result = await pool.query(allusersquery)
+    const data = { results: result.rows }
+    res.render('pages/db', data)
+  } 
+  else 
+    res.redirect("/");
+});
+
+app.get('/coastAppl', async (req, res)=> {
+  if (req.session.user) {
+    var allusersquery = `SELECT * FROM coastAppl ORDER BY id`;
+    const result = await pool.query(allusersquery)
+    const data = { results: result.rows }
+    res.render('pages/db', data)
+  } 
+  else 
+    res.redirect("/");
+});
+
+
+//--------------------------------------------------RUNS SCRAPPING BASED ON SELECTED---------------------------------------
+
+app.get("/scrape/default/default/default", async(req,res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
   } 
   else
     res.redirect("/")
 })
-app.get("/scrape:id", async(req,res) => {
-  var id = req.params.id;
-  console.log(id);
-  if(id == 'goemans'){
-    sitemap(106);
-    await res.render('pages/scraped-data')
-  } else if (id == 'canAppl'){
-    sitemap1();
-    await res.render('pages/scraped-data')
-  } else{
-    res.render("pages/urlPage");
+
+app.get("/scrape/:id/:id2/:id3/:id4", async(req,res) => {
+  var id = req.params.id.toString();
+  var id2 = req.params.id2.toString();
+  var id3 = req.params.id3.toString();
+  numRows = req.params.id4.toString();
+
+  urlPageData[0] = id;
+  urlPageData[1] = id2;
+  urlPageData[2] = id3;
+  urlPageData[3] = numRows;
+
+  if(id == 'goemans' || id2 == 'goemans' || id3 == 'goemans'){
+    if(goemansRunning){
+      console.log("Goeman's is running");
+    }else{
+      goemansRunning = true;
+      scrapGoemans(106);
+      //numRows++;
+    }
   }
+  if (id == 'canAppl' || id2 == 'canAppl' || id3 == 'canAppl'){
+    scrapCanAppl();
+    //numRows++;
+  }
+  if (id == 'midAppl' || id2 == 'midAppl' || id3 == 'midAppl'){
+    scrapMidAppl();
+    //numRows++;
+  }
+})
+
+app.get("/progress", async(req,res) =>{
+  progBar[0] = canApplCounter();
+  progBar[1] = getCount();
+  progBar[2] = midApplCounter();
+  res.send(`${progBar}`);
+})
+
+app.get("/running", async(req,res) =>{
+  res.send(`${goemansRunning}`);
+})
+
+app.get("/goemanSuccess", async(req,res) =>{
+  goemansRunning = false;
+  console.log("Goemans Success");
+})
+app.get("/urlPageData", async(req,res) =>{
+  console.log(urlPageData);
+  res.send(`${urlPageData}`);
 })
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
-
-// Goemans Scrape
-
-const urlArray = [];
-const results = [];
-let browser;
-
-// Function Parameters: URL, Last Modified Date, Product num
-// Scrapes Price, SKU, Product Name from Product URL
-async function scrapeProduct(url, lastmod, i) {
-    try{
-        // Retrieves SKU from URL
-        const urlSplit = url.split("/");
-        const sku = urlSplit[urlSplit.length-1]
-        if(sku == ''){ // If URL is not a product exit
-            return;
-        }
-        // Set-up return object
-        var obj = {
-            Product:`${i}`,
-            name:'',
-            sku:`${sku}`,
-            url:`${url}`,
-            lastmod:`${lastmod}`,
-            price:''
-        };
-        const page = await browser.newPage();
-        await page.setRequestInterception(true);
-        page.on('request', (req) => {
-        if(req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image'){
-            req.abort();
-        }
-        else {
-            req.continue();
-        }
-        });
-        page.goto(url, {
-            waitUntil: 'domcontentloaded',
-            //remove timout
-            timeout: 0
-        });
-        process.setMaxListeners(Infinity); // Sets Max Listeners to Inf
-        try{
-            // Extract Product Name
-            await page.waitForXPath('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
-            const [el3] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
-            const txt3 = await el3.getProperty('innerText');
-            const rawTxt3 = await txt3.jsonValue();
-            obj.name = rawTxt3;
-            try{
-                // Extract Price
-                const [el] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/dl[2]/dd');
-                const txt = await el.getProperty('innerText');
-                const rawTxt = await txt.jsonValue();
-                let text = rawTxt.replace(/\$|,/g,''); // Turn price into integer value
-                obj.price = parseFloat(text);
-            }catch(e){ // Price Doesn't exist
-                obj.price = 0;
-            }
-            results.push(obj); // Push Obj into results array
-
-            // Database Queries
-            var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '${lastmod}')`
-            var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='${lastmod}' WHERE sku='${obj.sku}'`
-            var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${obj.sku}' LIMIT 1)`)
-
-            if(getDbSku.rows[0].exists)
-            {
-                await pool.query(updateQuery)
-            }
-            else{
-                await pool.query(insertQuery)
-            }
-
-            await page.close();
-        } catch(e){
-            console.log(e);
-            page.close();
-        } finally {
-            console.log(obj);
-        }
-    }catch(e){
-        console.log(e);
-    }
-}
-//scrapeProduct('https://www.goemans.com/home/kitchen/accessories/cooking/range/OW3001');
-
-// Function runs through goemans.com/sitemap.xml to extract all of product URL's
-async function sitemap(index){
-    const browser = await puppeteer.launch({headless:true, args: ['--no-sandbox']});
-    try{
-        const page = await browser.newPage();
-        page.goto('https://www.goemans.com/sitemap.xml');
-        page.setDefaultNavigationTimeout(0); // Sets navigation limit to inf
-        await page.waitForNavigation({ // Wait until network is idle
-            waitUntil: 'networkidle0',
-        });
-        // Loop: Extracts URL & lastmod from sitemap
-        var i = index;
-        for(var i; i< 206;i++){
-            // Extracts url
-            await page.waitForSelector(`#folder${i} > div.opened > div:nth-child(2) > span:nth-child(2)`, { // Wait for selector to laod
-                visible: true,
-            });
-            const [el] = await page.$$(`#folder${i} > div.opened > div:nth-child(2) > span:nth-child(2)`);
-            const txt = await el.getProperty('innerText');
-            const url = await txt.jsonValue();
-            // Extracts lastmod
-            await page.waitForSelector(`#folder${i} > div.opened > div:nth-child(4) > span:nth-child(2)`, {
-                visible: true,
-            });
-            const [el2] = await page.$$(`#folder${i} > div.opened > div:nth-child(4) > span:nth-child(2)`);
-            const txt2 = await el2.getProperty('innerText');
-            const lastmod = await txt2.jsonValue();
-            // Create Object and push into Url Array
-            let obj = {
-                url:`${url}`,
-                lastmod:`${lastmod}`,
-            }
-            urlArray.push(obj);
-        }
-    } catch(e) {
-        console.log(e);
-    } finally {
-        console.log("Scraped URLs");
-        await browser.close();
-        scrape(); // Run Scrape URL Function
-    }
-}
-
-const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
-// Runs Scrape Product for each element in URL Array
-async function scrape(){
-    browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
-    for(var i=0; i<urlArray.length;i++){
-        scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
-        await timer(1400); // 1.4 second delay
-    }
-    await browser.close();
-}
-
-// async function sitemap(index)
-
-
-// Canadian Appliance scrape
-
-function delay(time) {
-  return new Promise(function(resolve) { 
-      setTimeout(resolve, time)
-  });
-}
-
-async function sitemap1() {
- try {
-     const URL = 'https://www.canadianappliance.ca/_sitemap_products.php'
-     const browser = await puppeteer.launch(
-      {
-          // userDataDir: './data',
-          headless: true,
-          args: ['--no-sandbox']
-      }
-     )
-
-     const page = await browser.newPage()
-
-     await page.goto(URL,{
-      waitUntil: 'load',
-      timeout: 0,
-     })
-     let data = await page.evaluate(() => {
-         let urls = []
-         let items = document.getElementsByTagName('body')[0].innerHTML.split('\n')
-          for(let i= 0; i < 100; i++) {
-              urls.push(items[i])
-          }
-          return urls
-     })
-  //    console.log(data)
-  //    data.forEach(async(item)=>{
-  //     await scraper(browser, item)
-  //    })
-     for(let i = 0; i < 100; i++) {
-      await scraper(browser, data[i], i)
-      delay(1000)
-     }
-     await browser.close()
- } 
- catch (error) {
-     console.error(error)
- }
-}
-
-async function scraper(browser, link, index) {  
-  try {
-      const URL = link
-      const page = await browser.newPage()
-
-      await page.goto(URL, { 
-          waitUntil: 'networkidle2',
-          timeout: 0})
-
-      await page.setRequestInterception(true)
-      page.on('request', (request)=>{
-          if (request.resourceType() == 'image' || request.resourceType() == 'stylesheet' || request.resourceType() == 'font')
-              request.abort()
-          else
-              request.continue()
-      })
-
-      let data = await page.evaluate(() => {
-          if(document.querySelector('h1 [itemprop=name]') == null)
-              return
-          else {
-              let results = []
-              let tempPrice = 0
-
-              if(document.querySelector('[itemprop=price]') != null){ 
-                  tempPrice = document.querySelector('[itemprop=price]').textContent
-                  tempPrice = parseFloat(tempPrice.slice(1, tempPrice.length-4).replace(',' , ''))
-              }
-                  results.push({
-                      name: document.querySelector('h1 [itemprop=name]').textContent,
-                      sku: document.querySelector('h1 div').textContent,
-                      price: tempPrice,
-                  })
-                  return results
-          }
-      })
-      if(data == null) {
-          console.log(index)
-          await page.close
-      }
-      else {
-          //Database Queries
-          var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '2020-06-20')`
-          var updateQuery = `UPDATE canAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='2020-06-20' WHERE sku='${data[0].sku}'`
-          var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM canAppl WHERE sku='${data[0].sku}' LIMIT 1)`)
-
-          if(getDbSku.rows[0].exists)
-          {
-              await pool.query(updateQuery)
-          }
-          else{
-              await pool.query(insertQuery)
-          }
-          await page.close
-      }
-  } 
-  catch (error) {
-          console.error(error)
-  }
-}
+module.exports = app;

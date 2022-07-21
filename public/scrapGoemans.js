@@ -2,19 +2,23 @@
 // Purpose: Scrapes data from goemans.com
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
+const fs = require('fs');
+const { get } = require('http');
 
+
+//const myFunction = require("./display");
 const urlArray = [];
 const results = [];
 
 var pool = new Pool({
-    connectionString: process.env.DATABASE_URL || "postgres://postgres:cmpt276@localhost/pricescraper",
+    connectionString: process.env.DATABASE_URL,
     // ssl: {
     //     rejectUnauthorized: false
     //   }
 })
 
 let browser;
-
+var counter = 0;
 // Function Parameters: URL, Last Modified Date, Product num
 // Scrapes Price, SKU, Product Name from Product URL
 async function scrapeProduct(url, lastmod, i) {
@@ -73,7 +77,7 @@ async function scrapeProduct(url, lastmod, i) {
             var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '${lastmod}')`
             var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='${lastmod}' WHERE sku='${obj.sku}'`
             var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${obj.sku}' LIMIT 1)`)
-
+            //await pool.query(insertQuery)
             if(getDbSku.rows[0].exists)
             {
                 await pool.query(updateQuery)
@@ -81,6 +85,14 @@ async function scrapeProduct(url, lastmod, i) {
             else{
                 await pool.query(insertQuery)
             }
+            counter++;
+            // myFunction(counter);
+            // fs.writeFile("./test", `${counter}`, function(err) {
+            //     if(err) {
+            //         return console.log(err);
+            //     }
+            //     console.log("The file was saved!");
+            // }); 
 
             await page.close();
         } catch(e){
@@ -96,7 +108,7 @@ async function scrapeProduct(url, lastmod, i) {
 //scrapeProduct('https://www.goemans.com/home/kitchen/accessories/cooking/range/OW3001');
 
 // Function runs through goemans.com/sitemap.xml to extract all of product URL's
-async function sitemap(index){
+async function scrapGoemans(index){
     const browser = await puppeteer.launch({headless:true, args: ['--no-sandbox']});
     try{
         const page = await browser.newPage();
@@ -107,7 +119,7 @@ async function sitemap(index){
         });
         // Loop: Extracts URL & lastmod from sitemap
         var i = index;
-        for(var i; i< 206;i++){
+        for(var i; i< 1106;i++){
             // Extracts url
             await page.waitForSelector(`#folder${i} > div.opened > div:nth-child(2) > span:nth-child(2)`, { // Wait for selector to laod
                 visible: true,
@@ -142,14 +154,22 @@ const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout
 // Runs Scrape Product for each element in URL Array
 async function scrape(){
     browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
-    for(var i=0; i<urlArray.length;i++){
-        scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
-        await timer(1400); // 1.4 second delay
+    try {
+        for(var i=0; i<urlArray.length + 1;i++){
+            scrapeProduct(urlArray[i].url, urlArray[i].lastmod, i);
+            await timer(1400); // 1.4 second delay
+        }
+        await(timer(4000));
+        await browser.close();
     }
-    await browser.close();
+    catch(e){
+        console.log(e)
+    }finally{
+        get("http://localhost:5000/goemanSuccess");
+    }
+}
+function getCount(){
+    return counter;
 }
 
-export async function sitemap(index);
-
-
-
+module.exports = { scrapGoemans, getCount };
