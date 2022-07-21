@@ -8,9 +8,9 @@ var cors = require('cors') //cross-origin resources sharing
 
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
-      rejectUnauthorized: false
-    }
+  // ssl: {
+  //     rejectUnauthorized: false
+  //   }
 })
 
 //imports scraping scripts 
