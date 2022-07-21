@@ -4,6 +4,7 @@ const session = require("express-session");
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 const fs = require('fs');
+var cors = require('cors') //cross-origin resources sharing
 
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -35,6 +36,7 @@ const PORT = process.env.PORT;
 app = express();
 
 app.use(express.json());
+app.use('/', cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'))
 
@@ -348,3 +350,5 @@ app.get("/urlPageData", async(req,res) =>{
 })
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+
+module.exports = app;
