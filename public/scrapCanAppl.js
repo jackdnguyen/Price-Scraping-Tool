@@ -7,7 +7,7 @@ const { Pool } = require('pg')
 var counter = 0;
 
 var pool = new Pool({
-    connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost/pricescraper",
+    connectionString: process.env.DATABASE_URL,
     // ssl: {
     //     rejectUnauthorized: false
     //   }

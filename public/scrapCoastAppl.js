@@ -1,8 +1,19 @@
+require("dotenv").config();
 const puppeteer = require('puppeteer');
+const { Pool } = require('pg')
 var productNum = 1;
 const urlArray = [];
 
 let browser;
+
+var pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    // ssl: {
+    //     rejectUnauthorized: false
+    //   }
+})
+
+var counter = 0;
 
 const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
 
@@ -57,12 +68,27 @@ async function scrape(){
                         sku = skuSplit[0].split("-");
                         sku = sku[2].trim();
                     }
+
                     console.log(`Product ${productNum} { Brand:` + brand + ", Name:" + name + ", Price:" + price + ", SKU:" + sku + " }");
                     console.log(urlEl[i]);
                     console.log("");
                     productNum++;
-
+                    counter++;
                     //console.log(element[i]);
+
+                    
+                    // Database Queries
+                    var insertQuery = `INSERT INTO coastAppl(sku,name,price,url,lpmod) VALUES('${sku}','${name}',${price},'${urlEl[i]}','2022-05-07')`
+                    var updateQuery = `UPDATE coastAppl SET name='${name}', price=${price}, url='${urlEl[i]}', lpmod='2022-05-07' WHERE sku='${sku}'`
+                    var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM coastAppl WHERE sku='${sku}' LIMIT 1)`)
+                    //await pool.query(insertQuery)
+                    if(getDbSku.rows[0].exists)
+                    {
+                        await pool.query(updateQuery)
+                    }
+                    else{
+                        await pool.query(insertQuery)
+                    }
                 }
 
                 // Break if only 1 page
@@ -87,8 +113,8 @@ async function scrape(){
 //scrape();
 // 43 collections
 
-// Function runs through goemans.com/sitemap.xml to extract all of product URL's
-async function sitemap(){
+// Function runs through sitemap_collections to extract all of product URL's
+async function scrapCoastAppl(){
     const browser = await puppeteer.launch({headless:true, args: ['--no-sandbox']});
     try{
         const page = await browser.newPage();
@@ -129,4 +155,9 @@ async function sitemap(){
     }
 }
 
-sitemap();
+function coastApplCounter(){
+    return counter;
+}
+//scrapCoastAppl()
+
+module.exports = { scrapCoastAppl, coastApplCounter };

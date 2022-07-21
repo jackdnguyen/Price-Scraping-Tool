@@ -1,208 +1,8 @@
 const puppeteer = require('puppeteer');
 
 let browser;
-let browser2;
 
 const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
-
-var results = [];
-var products = [];
-var additionalProducts = [];
-
-var productNum = 0;
-var x = 0;
-var pageNum = 1;
-var flag = true;
-
-// Extracts all products from Collections
-async function scrape(index){
-    try{
-        browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
-        const page = await browser.newPage();
-        for(x=index; x<1; x++){
-            if(flag){ // If no error occured page = 1, else page = page where crashed
-                pageNum = 1;
-            }
-            while(true){
-                console.log(`${collections[x]} Page: ${pageNum}`);
-                page.goto(`${collections[x]}?page=${pageNum}&features=%7B%7D`);
-                
-                page.setDefaultNavigationTimeout(60000); // Sets navigation limit to 1 minute
-
-                await page.waitForNavigation({waitUntil: 'networkidle2'});
-
-                let prices = await page.evaluate(() => {
-                    return Array.from(document.querySelectorAll("#products-list-container .catalogue__list-item"), 
-                    el =>  el = {price: parseFloat(el.getAttribute("data-price")), name: el.getAttribute("data-name"), brand: el.getAttribute("data-brand"), SKU: el.getAttribute("data-model-number")});
-                });  
-
-                if(prices.length === 0){
-                    break;
-                }
-
-                let url = await page.evaluate(() => {
-                    return Array.from(document.querySelectorAll("#products-list-container > div > div > .catalogue__item-model"), el => el.href);
-                });   
-
-                // console.log(prices.length)
-                for(var i=0; i< prices.length ; i++){
-                    console.log(`Product ${productNum}`);
-                    // console.log(prices[i]);
-                    // console.log(url[i]);
-                    results.push(url[i].toString());
-                    // console.log('');
-                    productNum++;
-                }
-                pageNum++;
-                await timer(1.4);
-            }
-        }
-        missingProducts();
-        // page.close();
-        browser.close();
-    }catch(e){
-        console.log(e); // Timed Out
-        flag = false; // Saves page num
-        //scrape(x);
-        console.log(x);
-        missingProducts(); // Find missing products
-    }
-}
-// 11931 Products in Collections 7/20/2021
-
-// Scrape Sitemap Test
-async function scrapGoemans(){
-    try{
-        const browserSiteMap = await puppeteer.launch({headless:true, args: ['--no-sandbox']});
-        const page = await browserSiteMap.newPage();
-        page.goto('https://www.goemans.com/sitemap.xml');
-        page.setDefaultNavigationTimeout(0); // Sets navigation limit to inf
-        await page.waitForNavigation({ // Wait until network is idle
-            waitUntil: 'networkidle0',
-        });
-        let element = await page.evaluate(() => {
-            // Selects all products in the container, el=>el.textContent makes each element textContent of product data
-            return Array.from(document.querySelectorAll(".pretty-print .folder .folder .opened div:nth-child(2) span:nth-child(2)"), el => el.textContent);
-        });
-        for(var i=0; i<element.length; i++){
-            const urlSplit = element[i].split("/");
-            const sku = urlSplit[urlSplit.length-1]
-            if(sku != ''){ // If URL is a product push into products
-                products.push(element[i]);
-            }
-        }
-        browserSiteMap.close();
-    }catch(e){
-        console.log(e);
-    } finally {
-        console.log("Scraped Goeman's Sitemap");
-        console.log(`Products: ${products.length}`);
-        scrape(0);
-    }
-}
-// scrapGoemans();
-
-// Finds the missing products, if result array does not have url's from sitemap
-async function missingProducts(){
-    browser2 = await puppeteer.launch({headless: true, args: ['--no-sandbox']}); // Launch New Browser for additional products
-    for(var i=0; i<products.length;i++){
-        if(results.includes(products[i]) == false){ // If results does not have product, push into additionalProducts Array
-            additionalProducts.push(products[i]);
-        }
-    }
-    console.log(`Additional Products to Scrape: ${additionalProducts.length}`);
-    for(var x=0;x<additionalProducts.length;x++){ // Scrape Additonal Products
-        var wait = await scrapeProduct(additionalProducts[x]);
-        if(x % 50 == 0){
-            await timer(3000);
-        }
-    }
-    await browser2.close();
-}
-
-// Scrapes Singular Product Item
-async function scrapeProduct(url) {
-    try{
-        // Retrieves SKU from URL
-        const urlSplit = url.split("/");
-        const sku = urlSplit[urlSplit.length-1]
-        if(sku == ''){ // If URL is not a product exit
-            return;
-        }
-        // Set-up return object
-        var obj = {
-            name:'',
-            sku:`${sku}`,
-            url:`${url}`,
-            lastmod:``,
-            price:''
-        };
-        const page = await browser2.newPage();
-        await page.setRequestInterception(true);
-        page.on('request', (req) => {
-        if(req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image'){
-            req.abort();
-        }
-        else {
-            req.continue();
-        }
-        });
-        page.goto(url, {
-            waitUntil: 'domcontentloaded',
-            //remove timout
-            timeout: 0
-        });
-        process.setMaxListeners(Infinity); // Sets Max Listeners to Inf
-        try{
-            // Extract Product Name
-            await page.waitForXPath('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
-            const [el3] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
-            const txt3 = await el3.getProperty('innerText');
-            const rawTxt3 = await txt3.jsonValue();
-            obj.name = rawTxt3;
-            try{
-                // Extract Price
-                const [el] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/dl[2]/dd');
-                const txt = await el.getProperty('innerText');
-                const rawTxt = await txt.jsonValue();
-                let text = rawTxt.replace(/\$|,/g,''); // Turn price into integer value
-                obj.price = parseFloat(text);
-            }catch(e){ // Price Doesn't exist
-                obj.price = 0;
-            }
-            results.push(obj); // Push Obj into results array
-
-            // Database Queries
-            // var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '')`
-            // var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='' WHERE sku='${obj.sku}'`
-            // var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${obj.sku}' LIMIT 1)`)
-            //await pool.query(insertQuery)
-            // if(getDbSku.rows[0].exists)
-            // {
-            //     await pool.query(updateQuery)
-            // }
-            // else{
-            //     await pool.query(insertQuery)
-            // }
-            productNum++;
-            await page.close();
-        } catch(e){
-            console.log(e);
-            page.close();
-        } finally {
-            console.log(productNum);
-            console.log(obj);
-        }
-    }catch(e){
-        console.log(e);
-    }
-}
-
-function goemansCount(){
-    return productNum;
-}
-
-module.exports = { scrapGoemans, goemansCount };
 
 const collections = [
     'https://www.goemans.com/home/kitchen/cooking/range/gas/', 
@@ -293,4 +93,61 @@ const collections = [
     'https://www.goemans.com/home/kitchen/accessories/ventilation/',
     'https://www.goemans.com/home/kitchen/accessories/laundry/washerdryer/',
     'https://www.goemans.com/home/kitchen/accessories/dishwasher/'
-];
+]
+
+var productNum = 1;
+var x = 0;
+var pageNum = 1;
+var flag = true;
+async function scrape(index){
+    try{
+        browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
+        const page = await browser.newPage();
+        for(x=index; x<collections.length; x++){
+            if(flag){ // If no error occured page = 1, else page = page where crashed
+                pageNum = 1;
+            }
+            while(true){
+                console.log(`${collections[x]} Page: ${pageNum}`);
+                page.goto(`${collections[x]}?page=${pageNum}&features=%7B%7D`);
+                
+                page.setDefaultNavigationTimeout(60000); // Sets navigation limit to 1 minute
+
+                await page.waitForNavigation({waitUntil: 'networkidle2'});
+
+                let prices = await page.evaluate(() => {
+                    return Array.from(document.querySelectorAll("#products-list-container .catalogue__list-item"), 
+                    el =>  el = {price: parseFloat(el.getAttribute("data-price")), name: el.getAttribute("data-name"), brand: el.getAttribute("data-brand"), SKU: el.getAttribute("data-model-number")});
+                });  
+
+                if(prices.length === 0){
+                    break;
+                }
+
+                let url = await page.evaluate(() => {
+                    return Array.from(document.querySelectorAll("#products-list-container > div > div > .catalogue__item-model"), el => el.href);
+                });   
+
+                console.log(prices.length)
+                for(var i=0; i< prices.length ; i++){
+                    console.log(`Product ${productNum}:`);
+                    console.log(prices[i]);
+                    console.log(url[i]);
+                    console.log('');
+                    productNum++;
+                }
+                pageNum++;
+                flag = true;
+                await timer(1.4);
+            }
+        }
+        page.close();
+        browser.close();
+    }catch(e){
+        console.log(e); // Timed Out
+        flag = false; // Saves page num
+        scrape(x);
+    }
+}
+
+scrape(0);

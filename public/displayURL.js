@@ -4,7 +4,7 @@
 var profileArr = ["default","default","default", 1];
 var options = ["default", "canAppl", "goemans", "midAppl"];
 var numRows = 1;
-var totalCases = 50;
+var totalCases = 1000;
 var scrapeForm = document.getElementById("scraper");
 
 var getProfile3;
@@ -86,7 +86,7 @@ async function cloneRow() {
 }
 
 // Function updates Progress Bars
-var totalCases = 50;
+var totalCases = 100;
 async function getProg() {
         // fetch progress
         var counterList = await fetch('/progress')

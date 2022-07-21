@@ -1,21 +1,23 @@
+const tempEnv = require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 const fs = require('fs');
+var cors = require('cors') //cross-origin resources sharing
 
 var pool = new Pool({
-  connectionString: process.env.DATABASE_URL || "postgres://postgres:postgres@localhost/pricescraper",
+  connectionString: process.env.DATABASE_URL,
   // ssl: {
   //     rejectUnauthorized: false
   //   }
 })
 
 //imports scraping scripts 
-// const { scrapGoemans, getCount } = require("./public/scrapGoemans.js");
+const { scrapGoemans, goemansCount } = require("./public/scrapGoemans.js");
 const { scrapCanAppl, canApplCounter } = require("./public/scrapCanAppl.js");
 const { scrapMidAppl, midApplCounter } = require("./public/scrapMidAppl.js");
-const { scrapGoemans, goemansCount } = require("./public/goemansv2.js");
+const { scrapCoastAppl, coastApplCounter } = require("./public/scrapCoastAppl");
 
 var goemansRunning = false;
 var canApplRunning = false;
@@ -27,12 +29,14 @@ var progBar = [0, 0, 0];
 
 const path = require("path");
 const { url } = require("inspector");
-const PORT = process.env.PORT || 5000;
+const e = require("express");
+const PORT = process.env.PORT;
 
 
 app = express();
 
 app.use(express.json());
+app.use('/', cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static('public'))
 
@@ -82,7 +86,7 @@ app.post("/login", async (req, res) => {
   // invalid user
 });
 
-//logout post
+//-------------------------------------------------------------LOGGING OUT TAKES TO LOGIN WINDOW--------------------------------
 app.post("/logout", async (req, res) => {
   console.log("hello");
   res.redirect("/");
@@ -92,7 +96,7 @@ app.post("/logout", async (req, res) => {
 });
 
 
-//url page get
+//----------------------------------------------------------------RENDERS URL PAGE AFTER LOGIN----------------------------------------
 app.get("/dashboard", (req, res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
@@ -101,10 +105,12 @@ app.get("/dashboard", (req, res) => {
     res.redirect("/");
 });
 
-//scraped page get
+
+
+//-------------------------------------------------------------RENDERS SCRAPED_DATA PAGE----------------------------------------------
 app.get("/display", async (req, res) => {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
     const result = await pool.query(allusersquery)
     const data = { results: result.rows }
     res.render('pages/scraped-data', data)
@@ -113,18 +119,11 @@ app.get("/display", async (req, res) => {
     res.redirect("/");
 });
 
-// //scraped page post
-// app.post("/display", async (req, res) => {
-//   //res.render("pages/display");
-//   res.render("pages/scraped-data");
-//   res.redirect("/scraped-data");
-//   // else
-//   // invalid user
-// });
+//------------------------------------------------------RENDERS COMPANY"S DATA FROM DATABASE------------------------------------
 
 app.get("/display-data", async (req, res) => {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY name`;
+    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
     const result = await pool.query(allusersquery)
     const data = { results: result.rows }
     res.render('pages/db', data)
@@ -133,7 +132,108 @@ app.get("/display-data", async (req, res) => {
     res.redirect("/");
 });
 
-//url page get
+
+//------------------------------------------------------SKU FILTER------------------------------------------
+
+const allData = async ()=>{
+    var selectQuery1 = await pool.query(`SELECT * FROM midAppl ORDER BY id`);
+    var selectQuery2 = await pool.query(`SELECT * FROM goemans ORDER BY id`);
+    var selectQuery3 = await pool.query(`SELECT * FROM coastAppl ORDER BY id`);
+    var selectQuery4 = await pool.query(`SELECT * FROM canAppl ORDER BY id`);
+
+    var selectQuery = []
+    selectQuery.push(selectQuery1);
+    selectQuery.push(selectQuery2);
+    selectQuery.push(selectQuery3);
+    selectQuery.push(selectQuery4);
+    // console.log(searchSku);
+    const result = selectQuery;
+    const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
+
+  const data = { results: mergedData}
+  return data;  
+}
+
+app.get('/all', async(req, res)=>{
+  if (req.session.user) {
+    // var selectQuery1 = await pool.query(`SELECT * FROM midAppl ORDER BY id`);
+    // var selectQuery2 = await pool.query(`SELECT * FROM goemans ORDER BY id`);
+    // var selectQuery3 = await pool.query(`SELECT * FROM coastAppl ORDER BY id`);
+    // var selectQuery4 = await pool.query(`SELECT * FROM canAppl ORDER BY id`);
+
+    // var selectQuery = []
+    // selectQuery.push(selectQuery1);
+    // selectQuery.push(selectQuery2);
+    // selectQuery.push(selectQuery3);
+    // selectQuery.push(selectQuery4);
+    // // console.log(searchSku);
+    // const result = selectQuery;
+    // const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
+
+    const data = await allData()
+
+    res.render('pages/all-data', data)
+  }
+  else
+    res.redirect('/')
+})
+
+
+// app.get('/display-all-data', async(req, res)=>{
+//   if (req.session.user) {
+//     const data = await allData()
+
+//     res.render('pages/all-data', data)
+//   }
+//   else
+//     res.redirect('/')
+// })
+
+
+
+app.post("/skuwSearch", async (req, res) => {
+  if (req.session.user) {
+    var skuName = req.body.Sku_name;
+    console.log(skuName);
+    //var allusersquery = `SELECT (c.name, c.price, c.url, c.lpmod,m.name, m.price, m.url, m.lpmod, g.name, g.price, g.url, g.lpmod)fROM canAPPL c, Midappl m, goemans g where c.sku='MDG6400AW' or m.sku='MDG6400AW' or g.sku='MDG6400AW';`;
+
+    // var allusersquery =
+    //   "SELECT * fROM canAppl where sku='" +
+    //   skuName +
+    //   "' union sELECT * fROM midappl where sku='" +
+    //   skuName +
+    //   "' union SELECT * fROM goemans where sku='" +
+    //   skuName +
+    //   "';";
+    var searchQuery1 = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
+    var searchQuery2 = await pool.query(`SELECT * FROM goemans WHERE sku='${skuName}'`);
+    var searchQuery3 = await pool.query(`SELECT * FROM coastAppl WHERE sku='${skuName}'`);
+    var searchQuery4 = await pool.query(`SELECT * FROM canAppl WHERE sku='${skuName}'`);
+
+    var searchSku = []
+    searchSku.push(searchQuery1);
+    searchSku.push(searchQuery2);
+    searchSku.push(searchQuery3);
+    searchSku.push(searchQuery4);
+
+    const result = searchSku;
+
+    const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
+
+    const data = { results: mergedData}
+    if(skuName != "")
+      res.render("pages/all-data", data);
+    else{
+      const data2 = await allData();
+      res.render("pages/all-data", data2)
+    }
+  } 
+  else 
+    res.redirect("/");
+});
+
+
+//-------------------------------------------------RENDERS URL PAGE WHEN HOME BUTTON IS CLICKED---------------------------------------------------------------------
 app.get("/home", (req, res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
@@ -141,6 +241,8 @@ app.get("/home", (req, res) => {
   else
     res.redirect("/");
 });
+
+//-----------------------------------------------RENDER INDIVIDUAL COMPANY"S DATA FROM SCRAPED DATA PAGE--------------------------------
 
 app.get('/canApp', async (req, res)=> {
   if (req.session.user) {
@@ -175,6 +277,20 @@ app.get('/midAppl', async (req, res)=> {
     res.redirect("/");
 });
 
+app.get('/coastAppl', async (req, res)=> {
+  if (req.session.user) {
+    var allusersquery = `SELECT * FROM coastAppl ORDER BY id`;
+    const result = await pool.query(allusersquery)
+    const data = { results: result.rows }
+    res.render('pages/db', data)
+  } 
+  else 
+    res.redirect("/");
+});
+
+
+//--------------------------------------------------RUNS SCRAPPING BASED ON SELECTED---------------------------------------
+
 app.get("/scrape/default/default/default", async(req,res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
@@ -196,21 +312,30 @@ app.get("/scrape/:id/:id2/:id3/:id4", async(req,res) => {
 
   if(id == 'goemans' || id2 == 'goemans' || id3 == 'goemans'){
     if(goemansRunning){
-      console.log("Goeman's is running");
+      console.log("Goeman's is already running!");
     }else{
+      console.log("Running Goemans");
       goemansRunning = true;
       scrapGoemans();
-      // scrape(0);
-      //numRows++;
     }
   }
   if (id == 'canAppl' || id2 == 'canAppl' || id3 == 'canAppl'){
-    scrapCanAppl();
-    //numRows++;
+    if(canApplRunning){
+      console.log("Canadian Appliance is already running!")
+    }else{
+      console.log("Running Canadian Appliance");
+      canApplRunning = true;
+      scrapCanAppl();
+    }
   }
   if (id == 'midAppl' || id2 == 'midAppl' || id3 == 'midAppl'){
-    scrapMidAppl();
-    //numRows++;
+    if(midApplRunning){
+      console.log("Midland Appliance is already running!")
+    }else{
+      console.log("Running Midland Appliance");
+      midApplRunning = true;
+      scrapMidAppl();
+    }
   }
 })
 
@@ -235,3 +360,5 @@ app.get("/urlPageData", async(req,res) =>{
 })
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+
+module.exports = app;
