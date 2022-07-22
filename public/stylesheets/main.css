@@ -1,9 +1,18 @@
 table {
-  margin-left: 2rem;
+  margin-left: 1vw ;
+}
+
+#displayData {
+  margin-left: 2.5vw;
+  width: 90vw;
+}
+
+.product-url {
+  min-width: 30vw;
 }
 
 .filter {
-  margin-left: 2rem;
+  margin-left: 2.5vw;
 }
 
 .data-container {
