@@ -7,8 +7,16 @@ table {
   width: 90vw;
 }
 
+#displayData th {
+  text-align: center;
+}
+
+#displayData td{
+  text-align: center;
+}
+
 .product-url {
-  min-width: 30vw;
+  min-width: 40vw;
 }
 
 .filter {

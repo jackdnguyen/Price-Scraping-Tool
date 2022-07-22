@@ -27,14 +27,14 @@
 
     <div class="data-container">
       <form action="/company-name" method="POST">
-        <!-- <h2>Canadian Appliance</h2> -->
+        <h1><%=name%></h1>
       </form>
 
-      <!-- <div class='filter'>
-        <form action="skuwSearch" method="post">
-          <input name="Sku_name" id="Sku_name" class="filtersku" onchange="submit" type="text" placeholder="SKU Number" onchange="form.submit()">
+      <div class='filter'>
+        <form action="skuFilter" method="post">
+          <input name="Sku_name" id="Sku_name" class="filtersku" type="text" placeholder="SKU Number" onchange="form.submit()">
         </form>        
-      </div> -->
+      </div>
 
       <table id="displayData">
         <tr>

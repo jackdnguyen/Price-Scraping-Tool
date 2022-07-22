@@ -70,10 +70,6 @@ app.post("/login", async (req, res) => {
   var un = req.body.f_uname;
   var pwd = req.body.f_pwd;
 
-  // var verifyQuery = `SELECT * FROM validusers WHERE uname='${un}' AND password='${pwd}'`
-  // var result = await pool.query(verifyQuery)
-
-  // if result.rows is !empty
   // valid user
   if (un === "admin" && pwd === "scraper") {
     // valid
@@ -133,105 +129,6 @@ app.get("/display-data", async (req, res) => {
 });
 
 
-//------------------------------------------------------SKU FILTER------------------------------------------
-
-const allData = async ()=>{
-    var selectQuery1 = await pool.query(`SELECT * FROM midAppl ORDER BY id`);
-    var selectQuery2 = await pool.query(`SELECT * FROM goemans ORDER BY id`);
-    var selectQuery3 = await pool.query(`SELECT * FROM coastAppl ORDER BY id`);
-    var selectQuery4 = await pool.query(`SELECT * FROM canAppl ORDER BY id`);
-
-    var selectQuery = []
-    selectQuery.push(selectQuery1);
-    selectQuery.push(selectQuery2);
-    selectQuery.push(selectQuery3);
-    selectQuery.push(selectQuery4);
-    // console.log(searchSku);
-    const result = selectQuery;
-    const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
-
-  const data = { results: mergedData}
-  return data;  
-}
-
-app.get('/all', async(req, res)=>{
-  if (req.session.user) {
-    // var selectQuery1 = await pool.query(`SELECT * FROM midAppl ORDER BY id`);
-    // var selectQuery2 = await pool.query(`SELECT * FROM goemans ORDER BY id`);
-    // var selectQuery3 = await pool.query(`SELECT * FROM coastAppl ORDER BY id`);
-    // var selectQuery4 = await pool.query(`SELECT * FROM canAppl ORDER BY id`);
-
-    // var selectQuery = []
-    // selectQuery.push(selectQuery1);
-    // selectQuery.push(selectQuery2);
-    // selectQuery.push(selectQuery3);
-    // selectQuery.push(selectQuery4);
-    // // console.log(searchSku);
-    // const result = selectQuery;
-    // const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
-
-    const data = await allData()
-
-    res.render('pages/all-data', data)
-  }
-  else
-    res.redirect('/')
-})
-
-
-// app.get('/display-all-data', async(req, res)=>{
-//   if (req.session.user) {
-//     const data = await allData()
-
-//     res.render('pages/all-data', data)
-//   }
-//   else
-//     res.redirect('/')
-// })
-
-
-
-app.post("/skuwSearch", async (req, res) => {
-  if (req.session.user) {
-    var skuName = req.body.Sku_name;
-    console.log(skuName);
-    //var allusersquery = `SELECT (c.name, c.price, c.url, c.lpmod,m.name, m.price, m.url, m.lpmod, g.name, g.price, g.url, g.lpmod)fROM canAPPL c, Midappl m, goemans g where c.sku='MDG6400AW' or m.sku='MDG6400AW' or g.sku='MDG6400AW';`;
-
-    // var allusersquery =
-    //   "SELECT * fROM canAppl where sku='" +
-    //   skuName +
-    //   "' union sELECT * fROM midappl where sku='" +
-    //   skuName +
-    //   "' union SELECT * fROM goemans where sku='" +
-    //   skuName +
-    //   "';";
-    var searchQuery1 = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
-    var searchQuery2 = await pool.query(`SELECT * FROM goemans WHERE sku='${skuName}'`);
-    var searchQuery3 = await pool.query(`SELECT * FROM coastAppl WHERE sku='${skuName}'`);
-    var searchQuery4 = await pool.query(`SELECT * FROM canAppl WHERE sku='${skuName}'`);
-
-    var searchSku = []
-    searchSku.push(searchQuery1);
-    searchSku.push(searchQuery2);
-    searchSku.push(searchQuery3);
-    searchSku.push(searchQuery4);
-
-    const result = searchSku;
-
-    const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
-
-    const data = { results: mergedData}
-    if(skuName != "")
-      res.render("pages/all-data", data);
-    else{
-      const data2 = await allData();
-      res.render("pages/all-data", data2)
-    }
-  } 
-  else 
-    res.redirect("/");
-});
-
 
 //-------------------------------------------------RENDERS URL PAGE WHEN HOME BUTTON IS CLICKED---------------------------------------------------------------------
 app.get("/home", (req, res) => {
@@ -243,12 +140,43 @@ app.get("/home", (req, res) => {
 });
 
 //-----------------------------------------------RENDER INDIVIDUAL COMPANY"S DATA FROM SCRAPED DATA PAGE--------------------------------
+var company_name;
 
-app.get('/canApp', async (req, res)=> {
+const getCanAppl = async ()=>{
+  var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
+  const result = await pool.query(allusersquery)
+  company_name = 'Canadian Appliance'
+  const data = { results: result.rows, name: 'Canadian Appliance'}
+  return data;
+}
+
+const getGoemans = async ()=>{
+  var allusersquery = `SELECT * FROM goemans ORDER BY id`;
+  const result = await pool.query(allusersquery)
+  company_name = 'Goemans'
+  const data = { results: result.rows, name: 'Goemans'}
+  return data;
+}
+
+const getMidAppl = async ()=>{
+  var allusersquery = `SELECT * FROM midAppl ORDER BY id`;
+  const result = await pool.query(allusersquery)
+  company_name = 'Midland Appliance'
+  const data = { results: result.rows, name: 'Midland Appliance'}
+  return data;
+}
+
+const getCoastAppl = async ()=>{
+  var allusersquery = `SELECT * FROM coastAppl ORDER BY id`;
+  const result = await pool.query(allusersquery)
+  company_name = 'Coast Appliances'
+  const data = { results: result.rows, name: 'Coast Appliances'}
+  return data;
+}
+
+app.get('/canAppl', async (req, res)=> {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
-    const result = await pool.query(allusersquery)
-    const data = { results: result.rows }
+    let data = await getCanAppl();
     res.render('pages/db', data)
   } 
   else 
@@ -257,9 +185,7 @@ app.get('/canApp', async (req, res)=> {
 
 app.get('/goemans', async (req, res)=> {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM goemans ORDER BY id`;
-    const result = await pool.query(allusersquery)
-    const data = { results: result.rows }
+    let data = await getGoemans();
     res.render('pages/db', data)
   } 
   else 
@@ -268,9 +194,7 @@ app.get('/goemans', async (req, res)=> {
 
 app.get('/midAppl', async (req, res)=> {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM midAppl ORDER BY id`;
-    const result = await pool.query(allusersquery)
-    const data = { results: result.rows }
+    let data = await getMidAppl();
     res.render('pages/db', data)
   } 
   else 
@@ -279,13 +203,120 @@ app.get('/midAppl', async (req, res)=> {
 
 app.get('/coastAppl', async (req, res)=> {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM coastAppl ORDER BY id`;
-    const result = await pool.query(allusersquery)
-    const data = { results: result.rows }
+    let data = await getCoastAppl();
     res.render('pages/db', data)
   } 
   else 
     res.redirect("/");
+});
+
+
+//------------------------------------------------------SKU FILTER------------------------------------------
+
+const allData = async ()=>{
+  var selectQuery1 = await pool.query(`SELECT * FROM midAppl ORDER BY id`);
+  var selectQuery2 = await pool.query(`SELECT * FROM goemans ORDER BY id`);
+  var selectQuery3 = await pool.query(`SELECT * FROM coastAppl ORDER BY id`);
+  var selectQuery4 = await pool.query(`SELECT * FROM canAppl ORDER BY id`);
+
+  var selectQuery = []
+  selectQuery.push(selectQuery1);
+  selectQuery.push(selectQuery2);
+  selectQuery.push(selectQuery3);
+  selectQuery.push(selectQuery4);
+
+  const result = selectQuery;
+  const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
+
+const data = { results: mergedData}
+return data;  
+}
+
+app.get('/all', async(req, res)=>{
+if (req.session.user) {
+  const data = await allData()
+  res.render('pages/all-data', data)
+}
+else
+  res.redirect('/')
+})
+
+
+app.post("/skuwSearch", async (req, res) => {
+if (req.session.user) {
+  var skuName = req.body.Sku_name;
+  console.log(skuName);
+
+  var searchQuery1 = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
+  var searchQuery2 = await pool.query(`SELECT * FROM goemans WHERE sku='${skuName}'`);
+  var searchQuery3 = await pool.query(`SELECT * FROM coastAppl WHERE sku='${skuName}'`);
+  var searchQuery4 = await pool.query(`SELECT * FROM canAppl WHERE sku='${skuName}'`);
+
+  var searchSku = []
+  searchSku.push(searchQuery1);
+  searchSku.push(searchQuery2);
+  searchSku.push(searchQuery3);
+  searchSku.push(searchQuery4);
+
+  const result = searchSku;
+
+  const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
+
+  const data = { results: mergedData}
+  if(skuName != "")
+    res.render("pages/all-data", data);
+  else{
+    const data2 = await allData();
+    res.render("pages/all-data", data2)
+  }
+} 
+else 
+  res.redirect("/");
+});
+
+app.post("/skuFilter", async (req, res) => {
+if (req.session.user) {
+  var skuName = req.body.Sku_name;
+  console.log(company_name);
+  console.log(skuName)
+
+  if (company_name == 'Midland Appliance'){
+    var searchQuery = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
+  }
+  else if (company_name == 'Goemans') {
+    var searchQuery = await pool.query(`SELECT * FROM goemans WHERE sku='${skuName}'`);
+  }
+  else if (company_name == 'Coast Appliances'){
+    var searchQuery = await pool.query(`SELECT * FROM coastAppl WHERE sku='${skuName}'`);
+  }
+  else if (company_name == 'Canadian Appliance') {
+    var searchQuery = await pool.query(`SELECT * FROM canAppl WHERE sku='${skuName}'`);
+  }
+
+  const data = { results: searchQuery.rows, name: company_name}
+  if(skuName != "")
+    res.render("pages/db", data);
+  else{
+    if (company_name == 'Midland Appliance'){
+      let data = await getMidAppl();
+      res.render('pages/db', data);
+    }
+    else if (company_name == 'Goemans') {
+      let data = await getGoemans();
+      res.render('pages/db', data);
+    }
+    else if (company_name == 'Coast Appliances'){
+      let data = await getCoastAppl();
+      res.render('pages/db', data);
+    }
+    else if (company_name == 'Canadian Appliance') {
+      let data = await getCanAppl();
+      res.render('pages/db', data);
+    }
+  }
+} 
+else 
+  res.redirect("/");
 });
 
 
