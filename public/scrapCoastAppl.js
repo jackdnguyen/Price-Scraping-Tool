@@ -1,17 +1,9 @@
-require("dotenv").config();
 const puppeteer = require('puppeteer');
-const { Pool } = require('pg')
+const knex = require('../knex.js')
 var productNum = 1;
 const urlArray = [];
 
 let browser;
-
-var pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //     rejectUnauthorized: false
-    //   }
-})
 
 var counter = 0;
 
@@ -78,16 +70,15 @@ async function scrape(){
 
                     
                     // Database Queries
-                    var insertQuery = `INSERT INTO coastAppl(sku,name,price,url,lpmod) VALUES('${sku}','${name}',${price},'${urlEl[i]}','2022-05-07')`
-                    var updateQuery = `UPDATE coastAppl SET name='${name}', price=${price}, url='${urlEl[i]}', lpmod='2022-05-07' WHERE sku='${sku}'`
-                    var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM coastAppl WHERE sku='${sku}' LIMIT 1)`)
-                    //await pool.query(insertQuery)
-                    if(getDbSku.rows[0].exists)
-                    {
-                        await pool.query(updateQuery)
+                    const searchQuery = await knex.select('sku').from('coastAppl').whereRaw('sku = ?', sku);
+        
+                    var time = new Date().toISOString();
+                    console.log(time);
+                    if(searchQuery.length != 0){
+                        await knex.update({name: name, price: price, url: urlEl[i], lpmod: time}).where({sku: sku}).from('coastAppl');
                     }
                     else{
-                        await pool.query(insertQuery)
+                        await knex.insert({sku: sku, name: name, price: price, url: urlEl[i], lpmod: time}).into('coastAppl');
                     }
                 }
 
@@ -160,3 +151,5 @@ function coastApplCounter(){
 }
 
 module.exports = { scrapCoastAppl, coastApplCounter };
+
+// scrapCoastAppl();

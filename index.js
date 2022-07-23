@@ -5,6 +5,7 @@ const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 const fs = require('fs');
 var cors = require('cors') //cross-origin resources sharing
+var knex = require('./knex')
 
 var pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -106,10 +107,7 @@ app.get("/dashboard", (req, res) => {
 //-------------------------------------------------------------RENDERS SCRAPED_DATA PAGE----------------------------------------------
 app.get("/display", async (req, res) => {
   if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
-    const result = await pool.query(allusersquery)
-    const data = { results: result.rows }
-    res.render('pages/scraped-data', data)
+    res.render('pages/scraped-data')
   } 
   else 
     res.redirect("/");
@@ -117,16 +115,16 @@ app.get("/display", async (req, res) => {
 
 //------------------------------------------------------RENDERS COMPANY"S DATA FROM DATABASE------------------------------------
 
-app.get("/display-data", async (req, res) => {
-  if (req.session.user) {
-    var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
-    const result = await pool.query(allusersquery)
-    const data = { results: result.rows }
-    res.render('pages/db', data)
-  } 
-  else 
-    res.redirect("/");
-});
+// app.get("/display-data", async (req, res) => {
+//   if (req.session.user) {
+//     var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
+//     const result = await pool.query(allusersquery)
+//     const data = { results: result.rows }
+//     res.render('pages/db', data)
+//   } 
+//   else 
+//     res.redirect("/");
+// });
 
 
 
@@ -139,38 +137,55 @@ app.get("/home", (req, res) => {
     res.redirect("/");
 });
 
-//-----------------------------------------------RENDER INDIVIDUAL COMPANY"S DATA FROM SCRAPED DATA PAGE--------------------------------
+//-----------------------------------------------RENDER COMPANY"S DATA FROM SCRAPED DATA PAGE--------------------------------
 var company_name;
 
+const allData = async ()=>{
+  company_name = "All Company's Data";
+  var selectQuery1 = await knex.select('*').from('midAppl').orderBy('id');
+  var selectQuery2 = await knex.select('*').from('goemans').orderBy('id');
+  var selectQuery3 = await knex.select('*').from('canAppl').orderBy('id');
+  var selectQuery4 = await knex.select('*').from('coastAppl').orderBy('id');
+
+  var selectQuery = []
+  selectQuery.push(selectQuery1);
+  selectQuery.push(selectQuery2);
+  selectQuery.push(selectQuery3);
+  selectQuery.push(selectQuery4);
+
+  const result = selectQuery;
+  const mergedData = result[0].concat(result[1]).concat(result[2]).concat(result[3]);
+
+const data = { results: mergedData, name:company_name}
+return data;  
+}
+
 const getCanAppl = async ()=>{
-  var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
-  const result = await pool.query(allusersquery)
+  const result = await knex.select('*').from('canAppl').orderBy('id');
   company_name = 'Canadian Appliance'
-  const data = { results: result.rows, name: 'Canadian Appliance'}
+  const data = { results: result, name: 'Canadian Appliance'}
   return data;
 }
 
 const getGoemans = async ()=>{
-  var allusersquery = `SELECT * FROM goemans ORDER BY id`;
-  const result = await pool.query(allusersquery)
+  const result = await knex.select('*').from('goemans').orderBy('id');
   company_name = 'Goemans'
-  const data = { results: result.rows, name: 'Goemans'}
+  const data = { results: result, name: 'Goemans'}
   return data;
 }
 
 const getMidAppl = async ()=>{
-  var allusersquery = `SELECT * FROM midAppl ORDER BY id`;
-  const result = await pool.query(allusersquery)
+  // var allusersquery = `SELECT * FROM midAppl ORDER BY id`;
+  const result = await knex.select('*').from('midAppl').orderBy('id');
   company_name = 'Midland Appliance'
-  const data = { results: result.rows, name: 'Midland Appliance'}
+  const data = { results: result, name: 'Midland Appliance'}
   return data;
 }
 
 const getCoastAppl = async ()=>{
-  var allusersquery = `SELECT * FROM coastAppl ORDER BY id`;
-  const result = await pool.query(allusersquery)
+  const result = await knex.select('*').from('coastAppl').orderBy('id');
   company_name = 'Coast Appliances'
-  const data = { results: result.rows, name: 'Coast Appliances'}
+  const data = { results: result, name: 'Coast Appliances'}
   return data;
 }
 
@@ -210,91 +225,47 @@ app.get('/coastAppl', async (req, res)=> {
     res.redirect("/");
 });
 
+app.get('/all', async(req, res)=>{
+  if (req.session.user) {
+    const data = await allData()
+    res.render('pages/db', data)
+  }
+  else
+    res.redirect('/')
+  })
+
 
 //------------------------------------------------------SKU FILTER------------------------------------------
 
-const allData = async ()=>{
-  var selectQuery1 = await pool.query(`SELECT * FROM midAppl ORDER BY id`);
-  var selectQuery2 = await pool.query(`SELECT * FROM goemans ORDER BY id`);
-  var selectQuery3 = await pool.query(`SELECT * FROM coastAppl ORDER BY id`);
-  var selectQuery4 = await pool.query(`SELECT * FROM canAppl ORDER BY id`);
-
-  var selectQuery = []
-  selectQuery.push(selectQuery1);
-  selectQuery.push(selectQuery2);
-  selectQuery.push(selectQuery3);
-  selectQuery.push(selectQuery4);
-
-  const result = selectQuery;
-  const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
-
-const data = { results: mergedData}
-return data;  
-}
-
-app.get('/all', async(req, res)=>{
-if (req.session.user) {
-  const data = await allData()
-  res.render('pages/all-data', data)
-}
-else
-  res.redirect('/')
-})
-
-
-app.post("/skuwSearch", async (req, res) => {
-if (req.session.user) {
-  var skuName = req.body.Sku_name;
-  console.log(skuName);
-
-  var searchQuery1 = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
-  var searchQuery2 = await pool.query(`SELECT * FROM goemans WHERE sku='${skuName}'`);
-  var searchQuery3 = await pool.query(`SELECT * FROM coastAppl WHERE sku='${skuName}'`);
-  var searchQuery4 = await pool.query(`SELECT * FROM canAppl WHERE sku='${skuName}'`);
-
-  var searchSku = []
-  searchSku.push(searchQuery1);
-  searchSku.push(searchQuery2);
-  searchSku.push(searchQuery3);
-  searchSku.push(searchQuery4);
-
-  const result = searchSku;
-
-  const mergedData = result[0].rows.concat(result[1].rows).concat(result[2].rows).concat(result[3].rows);
-
-  const data = { results: mergedData}
-  if(skuName != "")
-    res.render("pages/all-data", data);
-  else{
-    const data2 = await allData();
-    res.render("pages/all-data", data2)
-  }
-} 
-else 
-  res.redirect("/");
-});
-
 app.post("/skuFilter", async (req, res) => {
 if (req.session.user) {
-  var skuName = req.body.Sku_name;
+  var sku = req.body.Sku_name;
   console.log(company_name);
-  console.log(skuName)
+  console.log(sku)
+
+  var searchQuery1 = await knex.select('*').from('midAppl').whereRaw('sku = ?', sku);
+  var searchQuery2 = await knex.select('*').from('goemans').whereRaw('sku = ?', sku);
+  var searchQuery3 = await knex.select('*').from('canAppl').whereRaw('sku = ?', sku);
+  var searchQuery4 = await knex.select('*').from('coastAppl').whereRaw('sku = ?', sku);
 
   if (company_name == 'Midland Appliance'){
-    var searchQuery = await pool.query(`SELECT * FROM midAppl WHERE sku='${skuName}'`);
+    var searchQuery = searchQuery1;
   }
   else if (company_name == 'Goemans') {
-    var searchQuery = await pool.query(`SELECT * FROM goemans WHERE sku='${skuName}'`);
+    var searchQuery = searchQuery2;
   }
   else if (company_name == 'Coast Appliances'){
-    var searchQuery = await pool.query(`SELECT * FROM coastAppl WHERE sku='${skuName}'`);
+    var searchQuery = searchQuery4;
   }
   else if (company_name == 'Canadian Appliance') {
-    var searchQuery = await pool.query(`SELECT * FROM canAppl WHERE sku='${skuName}'`);
+    var searchQuery = searchQuery3;
+  }
+  else {
+    var searchQuery = searchQuery1.concat(searchQuery2).concat(searchQuery3).concat(searchQuery4);
   }
 
-  const data = { results: searchQuery.rows, name: company_name}
-  if(skuName != "")
+  const data = { results: searchQuery, name: company_name}
+  if(sku != "")
     res.render("pages/db", data);
   else{
     if (company_name == 'Midland Appliance'){
@@ -312,6 +283,10 @@ if (req.session.user) {
     else if (company_name == 'Canadian Appliance') {
       let data = await getCanAppl();
       res.render('pages/db', data);
+    }
+    else{
+      let data = await allData();
+      res.render('pages/db', data);      
     }
   }
 } 

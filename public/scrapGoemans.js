@@ -1,7 +1,7 @@
 // Author: Jack Nguyen
 // Purpose: Scrapes data from goemans.com
 const puppeteer = require('puppeteer');
-const { Pool } = require('pg')
+const knex = require('../knex.js')
 const fs = require('fs');
 const { get } = require('http');
 
@@ -9,13 +9,6 @@ const { get } = require('http');
 //const myFunction = require("./display");
 const urlArray = [];
 const results = [];
-
-var pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //     rejectUnauthorized: false
-    //   }
-})
 
 let browser;
 var counter = 0;
@@ -74,25 +67,18 @@ async function scrapeProduct(url, lastmod, i) {
             results.push(obj); // Push Obj into results array
 
             // Database Queries
-            var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '${lastmod}')`
-            var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='${lastmod}' WHERE sku='${obj.sku}'`
-            var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${obj.sku}' LIMIT 1)`)
-            //await pool.query(insertQuery)
-            if(getDbSku.rows[0].exists)
-            {
-                await pool.query(updateQuery)
+            const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku = ?', obj.sku);
+
+            var time = new Date().toISOString();
+            
+            if(searchQuery.length != 0){
+                await knex.update({name: obj.name, price: obj.price, url: obj.url, lpmod: time}).where({sku: obj.sku}).from('goemans');
             }
             else{
-                await pool.query(insertQuery)
+                await knex.insert({sku: obj.sku, name: obj.name, price: obj.price, url: obj.url, lpmod: time}).into('goemans');
             }
+            
             counter++;
-            // myFunction(counter);
-            // fs.writeFile("./test", `${counter}`, function(err) {
-            //     if(err) {
-            //         return console.log(err);
-            //     }
-            //     console.log("The file was saved!");
-            // }); 
 
             await page.close();
         } catch(e){

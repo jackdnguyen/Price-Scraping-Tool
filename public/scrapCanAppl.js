@@ -1,17 +1,10 @@
 const puppeteer = require('puppeteer');
-const { Pool } = require('pg')
+const knex = require('../knex.js')
 
 //create table canAppl(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT);
 //create table goemans(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
 //select exists (select 1 from canAppl where sku='000' LIMIT 1);
 var counter = 0;
-
-var pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //     rejectUnauthorized: false
-    //   }
-  })
 
 let browser;
 
@@ -121,20 +114,22 @@ async function scraper(browser, link, index) {
         }
         else {
             //Database Queries
-            var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '2020-06-20')`
-            var updateQuery = `UPDATE canAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='2020-06-20' WHERE sku='${data[0].sku}'`
-            var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM canAppl WHERE sku='${data[0].sku}' LIMIT 1)`)
+            const searchQuery = await knex.select('sku').from('canAppl').whereRaw('sku = ?', data[0].sku);
+            
+            console.log(index)
 
-            if(getDbSku.rows[0].exists)
-            {
-                await pool.query(updateQuery)
+            var time = new Date().toISOString();
+            console.log(time);
+            if(searchQuery.length != 0){
+                await knex.update({name: data[0].name, price: data[0].price, url: URL, lpmod: time}).where({sku: data[0].sku}).from('canAppl');
+                console.log(data);
             }
             else{
-                await pool.query(insertQuery)
+                await knex.insert({sku: data[0].sku, name: data[0].name, price: data[0].price, url: URL, lpmod: time}).into('canAppl');
+                console.log(data);
             }
+
             counter++;
-            console.log(index)
-            console.log(data)
             await page.close()
         }
     } 
