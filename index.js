@@ -99,7 +99,7 @@ app.get("/dashboard", (req, res) => {
 
 
 
-//-------------------------------------------------------------RENDERS SCRAPED_DATA PAGE----------------------------------------------
+//-------------------------------------------------------------RENDERS SCRAPED_DATA PAGE WITH LAST CHECK----------------------------------------------
 app.get("/display", async (req, res) => {
   if (req.session.user) {
     var lcheck1 = await knex.select('lpmod').from('canAppl').limit(1);
