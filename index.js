@@ -102,7 +102,34 @@ app.get("/dashboard", (req, res) => {
 //-------------------------------------------------------------RENDERS SCRAPED_DATA PAGE----------------------------------------------
 app.get("/display", async (req, res) => {
   if (req.session.user) {
-    res.render('pages/scraped-data')
+    var lcheck1 = await knex.select('lpmod').from('canAppl').limit(1);
+    var lcheck2 = await knex.select('lpmod').from('goemans').limit(1);
+    var lcheck3 = await knex.select('lpmod').from('midAppl').limit(1);
+    var lcheck4 = await knex.select('lpmod').from('coastAppl').limit(1);
+    var na ='N/A';
+
+    if (lcheck1 != '')
+      lcheck1 = lcheck1[0].lpmod; //canAppl
+    else
+      lcheck1 = na;
+
+    if (lcheck2 != '')
+      lcheck2 = lcheck2[0].lpmod; //goemans
+    else
+      lcheck2 = na;
+
+    if (lcheck3 != '')
+      lcheck3 = lcheck3[0].lpmod; //midAppl
+    else
+      lcheck3 = na;
+
+    if (lcheck4  != '')
+      lcheck4 = lcheck4[0].lpmod; //coastAppl
+    else
+      lcheck4 = na;
+
+    var results = {lcheck1: lcheck1, lcheck2: lcheck2, lcheck3: lcheck3, lcheck4: lcheck4};
+    res.render('pages/scraped-data', results);
   } 
   else 
     res.redirect("/");
