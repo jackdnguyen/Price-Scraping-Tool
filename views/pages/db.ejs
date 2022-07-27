@@ -30,10 +30,26 @@
         <h1><%=name%></h1>
       </form>
 
-      <div class='filter'>
-        <form action="skuFilter" method="post">
-          <input name="Sku_name" id="Sku_name" class="filtersku" type="text" placeholder="SKU Number" onchange="form.submit()">
-        </form>        
+      <div class="flex-item">
+        <div class='filter'>
+          <form action="skuFilter" method="post">
+            <input name="Sku_name" id="Sku_name" type="text" placeholder="SKU Number" onchange="form.submit()">
+          </form>        
+        </div>
+
+        <div class='high-low-filter'>
+            <select>
+              <option selected value="default">Select a Company</option>
+              <option value="low">Low</option>
+              <option value="high">High</option>
+            </select>    
+        </div>
+            
+        <div>
+          <form action="/csv-download" method="post">
+            <input name="csv-download" id="csv-download" type="submit" value="Download" onclick="form.submit()">
+          </form>        
+        </div>
       </div>
 
       <table id="displayData">

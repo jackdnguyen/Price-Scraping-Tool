@@ -26,3 +26,18 @@ table {
 .data-container {
   margin: 2rem 4rem;
 }
+
+.flex-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  margin-right: 3rem;
+}
+
+.flex-item input {
+  width: 30rem;
+}
+
+.flex-item div {
+  margin: 1rem 2rem;
+}
