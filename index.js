@@ -2,17 +2,12 @@ const tempEnv = require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const puppeteer = require('puppeteer');
-const { Pool } = require('pg')
+
+const fastcsv = require('fast-csv');
 const fs = require('fs');
+
 var cors = require('cors') //cross-origin resources sharing
 var knex = require('./knex')
-
-var pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  // ssl: {
-  //     rejectUnauthorized: false
-  //   }
-})
 
 //imports scraping scripts 
 const { scrapGoemans, getCount } = require("./public/scrapGoemans.js");
@@ -113,20 +108,6 @@ app.get("/display", async (req, res) => {
     res.redirect("/");
 });
 
-//------------------------------------------------------RENDERS COMPANY"S DATA FROM DATABASE------------------------------------
-
-// app.get("/display-data", async (req, res) => {
-//   if (req.session.user) {
-//     var allusersquery = `SELECT * FROM canAppl ORDER BY id`;
-//     const result = await pool.query(allusersquery)
-//     const data = { results: result.rows }
-//     res.render('pages/db', data)
-//   } 
-//   else 
-//     res.redirect("/");
-// });
-
-
 
 //-------------------------------------------------RENDERS URL PAGE WHEN HOME BUTTON IS CLICKED---------------------------------------------------------------------
 app.get("/home", (req, res) => {
@@ -155,6 +136,7 @@ const allData = async ()=>{
 
   const result = selectQuery;
   const mergedData = result[0].concat(result[1]).concat(result[2]).concat(result[3]);
+  await downloadData('all', mergedData);
 
 const data = { results: mergedData, name:company_name}
 return data;  
@@ -162,6 +144,7 @@ return data;
 
 const getCanAppl = async ()=>{
   const result = await knex.select('*').from('canAppl').orderBy('id');
+  await downloadData('canadian_appliance', result);
   company_name = 'Canadian Appliance'
   const data = { results: result, name: 'Canadian Appliance'}
   return data;
@@ -169,14 +152,15 @@ const getCanAppl = async ()=>{
 
 const getGoemans = async ()=>{
   const result = await knex.select('*').from('goemans').orderBy('id');
+  await downloadData('goemans', result);
   company_name = 'Goemans'
   const data = { results: result, name: 'Goemans'}
   return data;
 }
 
 const getMidAppl = async ()=>{
-  // var allusersquery = `SELECT * FROM midAppl ORDER BY id`;
   const result = await knex.select('*').from('midAppl').orderBy('id');
+  await downloadData('midland_appliance', result);
   company_name = 'Midland Appliance'
   const data = { results: result, name: 'Midland Appliance'}
   return data;
@@ -184,6 +168,7 @@ const getMidAppl = async ()=>{
 
 const getCoastAppl = async ()=>{
   const result = await knex.select('*').from('coastAppl').orderBy('id');
+  await downloadData('coast_appliances', result);
   company_name = 'Coast Appliances'
   const data = { results: result, name: 'Coast Appliances'}
   return data;
@@ -354,6 +339,57 @@ app.get("/urlPageData", async(req,res) =>{
   console.log(urlPageData);
   res.send(`${urlPageData}`);
 })
+
+
+
+//----------------DOWNLOADS CSV--------------------------
+
+var ws;
+
+const downloadData = async (name, cData)=>{
+
+  name = name + "_data.csv";
+  ws = fs.createWriteStream(name);
+  // selectQuery = await knex.select('*').from(tableName);
+
+  var data = JSON.parse(JSON.stringify(cData));
+  
+  fastcsv
+  // write the data to a CSV file
+  .write(data, { headers: true})
+
+  // log message when finished
+  .on("finish", () => {
+    console.log(` ${company_name} data exported to CSV file successfully.`);
+  })
+  .pipe(ws);
+}
+
+app.post('/csv-download', async(req, res) => {
+      let cName = '';
+
+      if (company_name == 'Canadian Appliance')
+        cName = 'canadian_appliance'
+      else if(company_name == 'Goemans')
+        cName = 'goemans';
+      else if (company_name == 'Midland Appliance')
+        cName = 'midland_appliance';
+      else if (company_name == 'Coast Appliances')
+        cName = 'coast_appliances' ; 
+      else
+        cName = 'all';
+
+    try {
+      let file = path.join(__dirname, cName + '_data.csv');
+      res.download(file);
+    }
+    catch(e)
+    {
+      console.log(e);
+    }
+  })
+
+/*---------------------------------*/
 
 app.listen(PORT, () => console.log(`Listening on ${PORT}`));
 
