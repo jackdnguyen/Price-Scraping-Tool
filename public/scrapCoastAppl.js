@@ -72,7 +72,7 @@ async function scrape(){
                     // Database Queries
                     const searchQuery = await knex.select('sku').from('coastAppl').whereRaw('sku = ?', sku);
         
-                    var time = new Date().toISOString();
+                    var time = new Date().toLocaleString();
                     console.log(time);
                     if(searchQuery.length != 0){
                         await knex.update({name: name, price: price, url: urlEl[i], lpmod: time}).where({sku: sku}).from('coastAppl');

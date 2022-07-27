@@ -130,7 +130,7 @@ async function scraper(browser, link, index, lMod) {
             
             console.log(index)
 
-            var time = new Date().toISOString();
+            var time = new Date().toLocaleString();
             console.log(time);
             if(searchQuery.length != 0){
                 await knex.update({name: data[0].name, price: data[0].price, url: URL, lpmod: time}).where({sku: data[0].sku}).from('midAppl');

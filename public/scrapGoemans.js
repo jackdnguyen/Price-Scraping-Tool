@@ -69,7 +69,7 @@ async function scrapeProduct(url, lastmod, i) {
             // Database Queries
             const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku = ?', obj.sku);
 
-            var time = new Date().toISOString();
+            var time = new Date().toLocaleString();
             
             if(searchQuery.length != 0){
                 await knex.update({name: obj.name, price: obj.price, url: obj.url, lpmod: time}).where({sku: obj.sku}).from('goemans');
