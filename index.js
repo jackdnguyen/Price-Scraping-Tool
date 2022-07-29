@@ -43,7 +43,7 @@ app.use(
     secret: "bigpete",
     resave: false,
     saveUninitialized: false,
-    maxAge: 20 * 1000, // 30 minutes
+    maxAge: 30 * 1000, // 30 minutes
   })
 );
 
@@ -102,10 +102,10 @@ app.get("/dashboard", (req, res) => {
 //-------------------------------------------------------------RENDERS SCRAPED_DATA PAGE WITH LAST CHECK----------------------------------------------
 app.get("/display", async (req, res) => {
   if (req.session.user) {
-    var lcheck1 = await knex.select('lpmod').from('canAppl').limit(1);
-    var lcheck2 = await knex.select('lpmod').from('goemans').limit(1);
-    var lcheck3 = await knex.select('lpmod').from('midAppl').limit(1);
-    var lcheck4 = await knex.select('lpmod').from('coastAppl').limit(1);
+    var lcheck1 = await knex.select('lpmod').from('canAppl').orderBy('id').limit(1);
+    var lcheck2 = await knex.select('lpmod').from('goemans').orderBy('id').limit(1);
+    var lcheck3 = await knex.select('lpmod').from('midAppl').orderBy('id').limit(1);
+    var lcheck4 = await knex.select('lpmod').from('coastAppl').orderBy('id').limit(1);
     var na ='N/A';
 
     if (lcheck1 != '')
@@ -280,31 +280,190 @@ if (req.session.user) {
   if(sku != "")
     res.render("pages/db", data);
   else{
+    let data = [];
     if (company_name == 'Midland Appliance'){
-      let data = await getMidAppl();
-      res.render('pages/db', data);
+      data = await getMidAppl();
     }
     else if (company_name == 'Goemans') {
-      let data = await getGoemans();
-      res.render('pages/db', data);
+      data = await getGoemans();
     }
     else if (company_name == 'Coast Appliances'){
-      let data = await getCoastAppl();
-      res.render('pages/db', data);
+      data = await getCoastAppl();
     }
     else if (company_name == 'Canadian Appliance') {
-      let data = await getCanAppl();
-      res.render('pages/db', data);
+      data = await getCanAppl();
     }
     else{
-      let data = await allData();
-      res.render('pages/db', data);      
+      data = await allData();    
     }
+    res.render('pages/db', data);
   }
 } 
 else 
   res.redirect("/");
 });
+
+//-----------------------------------------HIGH/ LOW FILTER----------------------------------------------------------
+
+let emptyList = [{id: '', sku: '', name: '', price: '', url: '', lpmod: ''}];
+const eData = { results: emptyList, name: company_name};
+
+
+//----------RENDERS ALL FILTER
+app.post('/all', async(req, res)=>{
+  let data = [];
+  if (company_name == 'Midland Appliance'){
+    data = await getMidAppl();
+  }
+  else if (company_name == 'Goemans') {
+    data = await getGoemans();
+  }
+  else if (company_name == 'Coast Appliances'){
+    data = await getCoastAppl();
+  }
+  else if (company_name == 'Canadian Appliance') {
+    data = await getCanAppl();
+  }
+  else{
+    data = await allData();    
+  }
+  res.render('pages/db', data);
+})
+
+//---------- RENDERS LOW FILTER
+app.post('/low', async(req, res)=>{
+  let data = [];
+  if (company_name == 'Midland Appliance'){
+    data = await getPricesFilter('midAppl');
+    
+    if(data.low.length == 0)
+      data = eData;
+  }
+  else if (company_name == 'Goemans') {
+    data = await getPricesFilter('goemans');
+
+    if(data.low.length == 0)
+      data = eData;
+  }
+  else if (company_name == 'Coast Appliances'){
+      data = await getCoastAppl();
+  }
+  else if ( company_name == 'Canadian Appliance') {
+    data = await getPricesFilter('canAppl');
+
+    if(data.low.length == 0)
+      data = eData;
+  }
+  else{
+    let data1=  await getPricesFilter('midAppl');
+    let data2 = await getPricesFilter('goemans');
+    let data3 = await getPricesFilter('canAppl');
+    data = (data1.low).concat(data2.low).concat(data3.low);
+    data = {low: data }
+    if(data.low.length == 0)
+      data = eData;
+  }
+
+  if(data.low != undefined){
+    const result = { results: data.low, name: company_name}
+    res.render('pages/db', result);
+  }
+  else
+  {
+    res.render('pages/db', data);
+  }
+})
+
+//---------- RENDERS HIGH FILTER
+app.post('/high', async(req, res)=>{
+  let data = [];
+  if (company_name == 'Midland Appliance'){
+    data = await getPricesFilter('midAppl');
+    
+    if(data.high.length == 0)
+      data = eData;
+  }
+  else if (company_name == 'Goemans') {
+    data = await getPricesFilter('goemans');
+
+    if(data.high.length == 0)
+      data = eData;
+  }
+  else if (company_name == 'Coast Appliances'){
+      data = await getCoastAppl();
+  }
+  else if ( company_name == 'Canadian Appliance') {
+    data = await getPricesFilter('canAppl');
+
+    if(data.high.length == 0)
+      data = eData;
+  }
+  else{
+    let data1=  await getPricesFilter('midAppl');
+    let data2 = await getPricesFilter('goemans');
+    let data3 = await getPricesFilter('canAppl');
+    data = (data1.high).concat(data2.high).concat(data3.high);
+    data = {high: data }
+
+    if(data.high.length == 0)
+      data = eData;
+  }
+
+  if(data.high != undefined){
+    const result = { results: data.high, name: company_name}
+    res.render('pages/db', result);
+  }
+  else
+  {
+    res.render('pages/db', data);
+  }
+
+})
+
+//returns high and low filtered values
+const getPricesFilter = async (tableName)=>{
+
+  var data1 = await knex.select('*').from('coastAppl').join(tableName, function(){ //returns goemans
+      this
+          .on('coastAppl.sku','=', tableName +'.sku')
+  })
+
+  var data2 = await knex.select('*').from(tableName).join('coastAppl', function(){ //returns coastAppl
+      this
+          .on('coastAppl.sku','=', tableName + '.sku');
+  })
+
+  let low = [];
+  let high = [];
+
+  data1.forEach((row1)=>{  //goemans rows
+      data2.forEach((row2)=>{ //coastAppl rows
+          if(row1.sku == row2.sku) 
+              if(row1.price > row2.price){
+                  high.push(row1);
+                  return;
+              }
+              else if(row1.price < row2.price) {
+                  low.push(row1);
+                  return;
+              }
+      })
+  })
+
+  high.sort((a, b)=>{
+    return (a.id) - (b.id);
+  })
+
+  low.sort((a, b)=>{
+      return (a.id) - (b.id);
+  })
+
+
+  var data = {low: low, high: high}
+  return data;
+}
+
+
 
 
 //--------------------------------------------------RUNS SCRAPPING BASED ON SELECTED---------------------------------------

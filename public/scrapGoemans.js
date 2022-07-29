@@ -105,7 +105,7 @@ async function scrapGoemans(index){
         });
         // Loop: Extracts URL & lastmod from sitemap
         var i = index;
-        for(var i; i< 1106;i++){
+        for(var i; i< 4000;i++){
             // Extracts url
             await page.waitForSelector(`#folder${i} > div.opened > div:nth-child(2) > span:nth-child(2)`, { // Wait for selector to laod
                 visible: true,

@@ -56,15 +56,15 @@ async function scrapCanAppl(){
     await browser.close()
     await launchBrowser()
 
-    for(let i = 0; i < 1000;) {
+    for(let i = 0; i < 4000;) {
         await scraper(browser, urls[i], i)
         await delay(1000)
         i++;
 
-        if(i % 100 === 0)
+        if(i % 200 === 0)
         {
             await browser.close()
-            await delay(10000)
+            await delay(5000)
             await launchBrowser()
         }
 

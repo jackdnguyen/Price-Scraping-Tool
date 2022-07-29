@@ -2,7 +2,7 @@
   <html lang="en-us">
     <head>
       <%- include ("../partials/header.ejs") %>
-      <title>Company's Data</title>
+      <title><%=name%> Data</title>
       <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
       <link rel="stylesheet" href="/stylesheets/login.css" />
       <link rel="stylesheet" href="/stylesheets/urlPage.css" />
@@ -37,13 +37,31 @@
           </form>        
         </div>
 
-        <div class='high-low-filter'>
-            <select>
-              <option selected value="default">Select a Company</option>
-              <option value="low">Low</option>
-              <option value="high">High</option>
-            </select>    
-        </div>
+        <div class="dropdown">
+          <input class="dropbtn" type="button" value="Sort By:">
+            <div class="dropdown-content">
+              <form action="/all" method="post">
+                <input name="default" id="default" type="button" value="All" onclick="form.submit()">
+              </form>
+              <form action="/low" method="post">
+                <input name="low" id="low" type="button" value="Low" onclick="form.submit()">
+              </form>
+              <form action="/high" method="post">
+                <input name="high" id="high" type="button" value="High" onclick="form.submit()">
+              </form>
+            </div>
+        </form>
+        </div> 
+
+        <!-- <div class='high-low-filter'>
+            <form action="/hlfilter" method="post">
+              <select>
+                <option selected><input name="default" id="default" type="button" value="Sort By:" onclick="form.submit()"></option>
+                <option><input name="low" id="low" type="button" value="Low" onclick="form.submit()"></option>
+                <option><input name="high" id="high" type="button" value="High" onclick="form.submit()"></option>
+              </select>
+            </form>    
+        </div> -->
             
         <div>
           <form action="/csv-download" method="post">
