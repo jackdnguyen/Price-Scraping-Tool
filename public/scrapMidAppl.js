@@ -1,94 +1,208 @@
+require("dotenv").config();
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
-
-//create table canAppl(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT);
-//create table goemans(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
-//create table midAppl(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
-//select exists (select 1 from canAppl where sku='000' LIMIT 1);
-var counter = 0;
+const { get } = require('http');
 
 var pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     // ssl: {
     //     rejectUnauthorized: false
     //   }
-  })
+})
 
 let browser;
+let browser2;
 
+const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
 
-function delay(time) {
-    return new Promise(function(resolve) { 
-        setTimeout(resolve, time)
-    });
- }
+var results = [];
+var products = [];
+var additionalProducts = [];
 
-async function launchBrowser(){
-    browser = await puppeteer.launch(
-        {
-            // userDataDir: './data',
+var productNum = 0;
+var x = 0;
+var pageNum = 1;
+var flag = true;
+var success = false;
+const lastmod = new Date().toLocaleString('en-CA', {
+    timeZone: 'America/Los_Angeles',
+});
+// Extracts all products from Collections
+async function scrape(index){
+    try{
+        browser = await puppeteer.launch({
             headless: true,
-            args: ['--no-sandbox']
-        })
-}
-
-async function sitemap() {
-   try {
-       const URL = 'https://cdn.avbportal.com/magento-media/sitemaps/cn0122/sitemap.xml'
-        await launchBrowser()
-
-       const page = await browser.newPage()
-
-       await page.goto(URL,{
-        waitUntil: 'networkidle0',
-        timeout: 0,
-       })
-       let data = await page.evaluate(() => {
-           let linkData = []
-           let items = document.querySelectorAll('url') //167 start index
-            for(let i= 167; i < items.length; i++) {
-                linkData.push( {
-                    url: items[i].querySelector('loc').innerHTML,
-                    lastMod: items[i].querySelector('lastmod').innerHTML,
-                })
+            args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+          });
+        const page = await browser.newPage();
+        for(x=0; x<collections.length; x++){
+            if(flag == true){ // If no error occured page = 1, else page = page where crashed
+                pageNum = 1;
             }
-            return linkData
-       })
-       return data
-   } 
-   catch (error) {
-       console.error(error)
-       await browser.close()
-   }
-}
+            while(true){
+                    console.log(`${collections[x]} Page: ${pageNum}`);
+                    page.goto(`${collections[x]}?page=${pageNum}`, { waitUntil: 'domcontentloaded', timeout: 0 }).catch(e =>{
+                        console.log(e);
+                        return false;
+                    });
+                    // await page.waitForSelector("div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9");
+                    await page.waitForNavigation("networkidle2").catch(e =>{
+                        console.log(e);
+                    });
+                    let prices = await page.evaluate(() => {      
+                        return Array.from(document.querySelectorAll("#__next > div.jss1.jss2 > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root.avb-typography.jss161.MuiGrid-container > div > div > article > div.jss171 > div.MuiBox-root > div:nth-child(3) > strong"),
+                        el => el.textContent);
+                    });
+                    if(prices.length == 0){
+                        break;
+                    }  
+                    let skuArray = await page.evaluate(() => {       
+                        return Array.from(document.querySelectorAll("#__next > div.jss1.jss2 > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root.avb-typography.jss161.MuiGrid-container > div > div > article > div.jss171 > span"),
+                        el => el.textContent);
+                    });  
+                    let names = await page.evaluate(() => {       
+                        return Array.from(document.querySelectorAll("#__next > div.jss1.jss2 > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root.avb-typography.jss161.MuiGrid-container > div > div > article > div.jss171 > h3 > a"),
+                        el => el = {name: el.textContent, url: el.href});
+                    });  
+                    // console.log(prices.length);
+                    // console.log(skuArray.length);
+                    // console.log(names.length)
+                    for(var i=0; i< prices.length ; i++){
+                        let skuSplit = skuArray[i].split(":");
+                        let sku = skuSplit[skuSplit.length-1].trim();
+                        let name = names[i].name.replace(/[^a-z0-9,.\-\" ]/gi, '');
+                        let price;
+                        if(prices[i] == ''){
+                            price = 0;
+                        } else{
+                            price = parseFloat(prices[i].replace(/\$|,/g, ''));
+                        }
+                        results.push(names[i].url);
+                        // console.log(names[i].name);
+                        // console.log(sku);
+                        // console.log(price);
+                        // console.log(names[i].url);
+                        //Database Queries
+                        var insertQuery = `INSERT INTO midAppl(sku,name,price,url,lpmod) VALUES('${sku}','${name}',${price},'${names[i].url}', '${lastmod}')`
+                        var updateQuery = `UPDATE midAppl SET name='${name}', price=${price}, url='${names[i].url}', lpmod='${lastmod}' WHERE sku='${sku}'`
+                        var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM midAppl WHERE sku='${sku}' LIMIT 1)`)
 
-
-async function scrapMidAppl(){
-    let linkItems = await sitemap()
-    await browser.close()
-    await launchBrowser()
-
-    for(let i = 0; i < 1000;) {
-        await scraper(browser, linkItems[i].url, i, linkItems[i].lastMod)
-        // await delay(1000)
-        i++;
-
-        if(i % 100 === 0)
-        {
-            await browser.close()
-            await delay(10000)
-            await launchBrowser()
+                        if(getDbSku.rows[0].exists)
+                        {
+                            await pool.query(updateQuery)
+                        }
+                        else{
+                            await pool.query(insertQuery)
+                        }
+                        productNum++;
+                    }
+                    console.log(`Midland Product: ${productNum}`);
+                    pageNum++;
+                    flag = true;
+                    await timer(1400);
+            }
         }
-
-       }
-       await browser.close()
+        browser.close();
+        return true;
+    }catch(e){
+        console.log(e); // Timed Out
+        flag = false; // Saves page num
+        console.log(x);
+        return false;
+    }
+}
+// scrapMidAppl();
+// Scrapes All Product Url's from Sitemap 
+async function scrapMidAppl(){
+    try{
+        const browserSiteMap = await puppeteer.launch({headless:true, args: ['--no-sandbox']});
+        const page = await browserSiteMap.newPage();
+        page.goto('https://cdn.avbportal.com/magento-media/sitemaps/cn0122/sitemap.xml');
+        page.setDefaultNavigationTimeout(0); // Sets navigation limit to inf
+        await page.waitForNavigation({ // Wait until network is idle
+            waitUntil: 'networkidle0',
+        });
+        let element = await page.evaluate(() => {
+            // Selects all products in the container, el=>el.textContent makes each element textContent of product data
+            return Array.from(document.querySelectorAll(".pretty-print .folder .folder .opened div:nth-child(2) span:nth-child(2)"), el => el.textContent);
+        });
+        for(var i=0; i<element.length; i++){
+            if(element[i].includes("https://www.midlandappliance.com/product/")){ // If URL is a product push into products
+                products.push(element[i]);
+            }
+        }
+        browserSiteMap.close();
+    }catch(e){
+        console.log(e);
+    } finally {
+        console.log("Scraped Midland Appliance's Sitemap");
+        console.log(`Products: ${products.length}`);
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+          });
+        scrapeLoop(0); // Runs ScrapeLoop
+    }
 }
 
+async function scrapeLoop(collectionIndex){
+    try{
+        var scraper = await scrape(collectionIndex);
+        if(scraper == true){ // if scraped collections successfully, continue
+            success = true;
+            browser.close();
+            console.log("Collection's Scraped Successfully")
+            missingProducts(); // Scrapes Missing Products
+        } else{ // else re-scrape last collection index
+            const pages = await browser.pages();
+            for(const page of pages) await page.close();
 
-async function scraper(browser, link, index, lMod) {  
+            browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+            });
+            await timer(4000);
+            console.log("Midland Appliance: Something went wrong, Resuming");
+            scrapeLoop(x);
+        }
+    } catch(e){
+        console.log(e);
+    }
+}
+
+// Finds the missing products, if result array does not have url's from sitemap
+async function missingProducts(){
+    try{
+        browser2 = await puppeteer.launch({headless: true, args: ['--no-sandbox']}); // Launch New Browser for additional products
+        for(var i=0; i<products.length;i++){
+            if(results.includes(products[i]) == false){ // If results does not have product, push into additionalProducts Array
+                additionalProducts.push(products[i]);
+            }
+        }
+        console.log(`Additional Products to Scrape: ${additionalProducts.length}`);
+        for(var x=0;x<additionalProducts.length;x++){ // Scrape Additonal Products
+            var individualScrape = await scrapeProduct(products[x]);
+            if(individualScrape == false){
+                const pages = await browser2.pages();
+                for(const page of pages) await page.close();
+                browser2 = await puppeteer.launch({
+                    headless: true,
+                    args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+                });
+            }
+            await timer(1000);
+        }
+        await browser2?.close();
+        get("http://localhost:5000/midApplSuccess");
+    }catch(e){
+        console.log(e);
+    }
+}
+
+async function scrapeProduct(link) {  
     try {
         const URL = link
-        const page = await browser.newPage()
+        const page = await browser2.newPage()
 
         await page.goto(URL, { 
             waitUntil: 'domcontentloaded',
@@ -127,13 +241,12 @@ async function scraper(browser, link, index, lMod) {
             }
         })
         if(data == null) {
-            console.log(index)
             await page.close()
         }
         else {
-            //Database Queries
-            var insertQuery = `INSERT INTO midAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '${lMod}')`
-            var updateQuery = `UPDATE midAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='${lMod}' WHERE sku='${data[0].sku}'`
+            // Database Queries
+            var insertQuery = `INSERT INTO midAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '${lastmod}')`
+            var updateQuery = `UPDATE midAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='${lastmod}' WHERE sku='${data[0].sku}'`
             var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM midAppl WHERE sku='${data[0].sku}' LIMIT 1)`)
 
             if(getDbSku.rows[0].exists)
@@ -143,21 +256,61 @@ async function scraper(browser, link, index, lMod) {
             else{
                 await pool.query(insertQuery)
             }
-            counter++;
-            console.log(index)
-            console.log(data)
+            productNum++;
+            console.log(`Midland Appliance Product: ${productNum}`);
+            // console.log(data)
             await page.close()
+            return true;
         }
     } 
     catch (error) {
-            console.error(error)
-            //await page.close()
+        console.log(error);
+        return false;
     }
 }
 
+
 function midApplCounter(){
-    return counter;
+    return productNum;
 }
 module.exports = { scrapMidAppl, midApplCounter };
 
-// scrapMidAppl();
+const collections = [
+    'https://www.midlandappliance.com/catalog/refrigerators',
+    'https://www.midlandappliance.com/catalog/ranges',
+    'https://www.midlandappliance.com/catalog/cooktops',
+    'https://www.midlandappliance.com/catalog/rangetops',
+    'https://www.midlandappliance.com/catalog/microwaves',
+    'https://www.midlandappliance.com/catalog/wall-ovens',
+    'https://www.midlandappliance.com/catalog/ventilation',
+    'https://www.midlandappliance.com/catalog/laundry-accessories',
+    'https://www.midlandappliance.com/catalog/washers',
+    'https://www.midlandappliance.com/catalog/dryers',
+    'https://www.midlandappliance.com/catalog/laundry-pairs',
+    'https://www.midlandappliance.com/catalog/washer-dryer-combos',
+    'https://www.midlandappliance.com/catalog/stackable-washers-and-dryers',
+    'https://www.midlandappliance.com/catalog/drying-cabinets',
+    'https://www.midlandappliance.com/catalog/appliances-commercial-laundry',
+    'https://www.midlandappliance.com/catalog/dishwashers',
+    'https://www.midlandappliance.com/catalog/freezers-and-ice-makers',
+    'https://www.midlandappliance.com/catalog/free-standing-grill',
+    'https://www.midlandappliance.com/catalog/built-in-grill',
+    'https://www.midlandappliance.com/catalog/outdoor-smokers',
+    'https://www.midlandappliance.com/catalog/outdoor-range-hoods',
+    'https://www.midlandappliance.com/catalog/side-burner',
+    'https://www.midlandappliance.com/catalog/outdoor-warming-drawer',
+    'https://www.midlandappliance.com/catalog/outdoor-refrigeration',
+    'https://www.midlandappliance.com/catalog/outdoor-modular-cabinets-storage',
+    'https://www.midlandappliance.com/catalog/outdoor-kitchen-plumbing',
+    'https://www.midlandappliance.com/catalog/outdoor-kitchen-kits',
+    'https://www.midlandappliance.com/catalog/outdoor-kitchen-installation-components',
+    'https://www.midlandappliance.com/catalog/coolers',
+    'https://www.midlandappliance.com/catalog/outdoor-patio-heaters',
+    'https://www.midlandappliance.com/catalog/coffee-espresso-makers',
+    'https://www.midlandappliance.com/catalog/fryers',
+    'https://www.midlandappliance.com/catalog/countertop-oven',
+    'https://www.midlandappliance.com/catalog/toaster',
+    'https://www.midlandappliance.com/catalog/blenders',
+    'https://www.midlandappliance.com/catalog/kitchen-appliance-packages',
+    'https://www.midlandappliance.com/catalog/air-conditioners'
+];

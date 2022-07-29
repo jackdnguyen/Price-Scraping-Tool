@@ -6,6 +6,7 @@
       <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
       <link rel="stylesheet" href="/stylesheets/login.css" />
       <link rel="stylesheet" href="/stylesheets/urlPage.css" />
+      <script type="text/javascript" src="../../public/display.js" async></script>
     </head>
 
     <body>
@@ -32,7 +33,7 @@
 
       <div class='filter'>
         <form action="skuwSearch" method="post">
-          <input name="Sku_name" id="Sku_name" class="filtersku" type="text" placeholder="SKU Number" onchange="form.submit()">
+          <input name="Sku_name" id="Sku_name" class="filtersku" type="text" placeholder="SKU Number" onkeypress="form.submit()">
         </form>        
       </div>
 

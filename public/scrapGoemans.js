@@ -1,3 +1,4 @@
+require("dotenv").config();
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 const { get } = require('http');
@@ -23,61 +24,69 @@ var x = 0;
 var pageNum = 1;
 var flag = true;
 var success = false;
+const lastmod = new Date().toLocaleString('en-CA', {
+    timeZone: 'America/Los_Angeles',
+});
 
 // Extracts all products from Collections
 async function scrape(index){
     try{
-        browser = await puppeteer.launch({headless: true, args: ['--no-sandbox']});
         const page = await browser.newPage();
         for(x=index; x<collections.length; x++){
             if(flag == true){ // If no error occured page = 1, else page = page where crashed
                 pageNum = 1;
             }
             while(true){
-                console.log(`${collections[x]} Page: ${pageNum}`);
-                page.goto(`${collections[x]}?page=${pageNum}&features=%7B%7D`);
-                
-                page.setDefaultNavigationTimeout(60000); // Sets navigation limit to 1 minute
+                    console.log(`${collections[x]} Page: ${pageNum}`);
+                    page.goto(`${collections[x]}?page=${pageNum}&features=%7B%7D`, { waitUntil: 'domcontentloaded', timeout: 0 }).catch(e =>{
+                        console.log(e);
+                    });
 
-                await page.waitForNavigation({waitUntil: 'networkidle2'});
+                    await page.waitForSelector('#products-list-container');
 
-                let prices = await page.evaluate(() => {
-                    return Array.from(document.querySelectorAll("#products-list-container .catalogue__list-item"), 
-                    el =>  el = {price: parseFloat(el.getAttribute("data-price")), name: el.getAttribute("data-name"), brand: el.getAttribute("data-brand"), sku: el.getAttribute("data-model-number")});
-                });  
+                    let prices = await page.evaluate(() => {
+                        return Array.from(document.querySelectorAll("#products-list-container .catalogue__list-item"), 
+                        el =>  el = {price: parseFloat(el.getAttribute("data-price")), name: el.getAttribute("data-name"), brand: el.getAttribute("data-brand"), sku: el.getAttribute("data-model-number")});
+                    });  
 
-                if(prices.length === 0){
-                    break;
-                }
-
-                let url = await page.evaluate(() => {
-                    return Array.from(document.querySelectorAll("#products-list-container > div > div > .catalogue__item-model"), el => el.href);
-                });   
-
-                // console.log(prices.length)
-                for(var i=0; i< prices.length ; i++){
-                    console.log(`Product ${productNum + 1}`);
-                    // console.log(prices[i]);
-                    // console.log(url[i]);
-                                // Database Queries
-                    var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${prices[i].sku}','${prices[i].name}',${prices[i].price},'${url[i]}', '2022-07-05')`
-                    var updateQuery = `UPDATE goemans SET name='${prices[i].name}', price=${prices[i].price}, url='${url[i]}', lpmod='2022-07-05' WHERE sku='${prices[i].sku}'`
-                    var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${prices[i].sku}' LIMIT 1)`)
-                    //await pool.query(insertQuery)
-                    if(getDbSku.rows[0].exists)
-                    {
-                        await pool.query(updateQuery)
+                    if(prices.length === 0){
+                        break;
                     }
-                    else{
-                        await pool.query(insertQuery)
+
+                    let url = await page.evaluate(() => {
+                        return Array.from(document.querySelectorAll("#products-list-container > div > div > .catalogue__item-model"), el => el.href);
+                    });   
+
+                    // console.log(prices.length)
+                    for(var i=0; i< prices.length ; i++){
+                        prices[i].name = prices[i].brand + " - " + prices[i].name;
+                        // console.log(prices[i]);
+                        // console.log(url[i]);
+                        prices[i].name = prices[i].name.replace(/[^a-z0-9,.\-\" ]/gi, '')
+                        // let sku = prices[i].sku.toString();
+                        // let name = removeSpecials(prices[i].name.toString());
+                        // let price = parseFloat(prices[i].price);
+                        // let urlLink = url[i].toString();
+                            // Database Queries
+                        var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${prices[i].sku}','${prices[i].name}',${prices[i].price},'${url[i]}', '${lastmod}')`
+                        var updateQuery = `UPDATE goemans SET name='${prices[i].name}', price=${prices[i].price}, url='${url[i]}', lpmod='${lastmod}' WHERE sku='${prices[i].sku}'`
+                        var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${prices[i].sku}' LIMIT 1)`)
+                        //await pool.query(insertQuery)
+                        if(getDbSku.rows[0].exists)
+                        {
+                            await pool.query(updateQuery)
+                        }
+                        else{
+                            await pool.query(insertQuery)
+                        }
+                        results.push(url[i].toString());
+                        // console.log('');
+                        productNum++;
                     }
-                    results.push(url[i].toString());
-                    // console.log('');
-                    productNum++;
-                }
-                pageNum++;
-                flag = true;
-                await timer(1.4);
+                    console.log(`Goemans Product ${productNum}`);
+                    pageNum++;
+                    flag = true;
+                    await timer(1400);
             }
         }
         browser.close();
@@ -118,7 +127,12 @@ async function scrapGoemans(){
     } finally {
         console.log("Scraped Goeman's Sitemap");
         console.log(`Products: ${products.length}`);
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+          });
         scrapeLoop(0); // Runs ScrapeLoop
+        // checkCount();
     }
 }
 // scrapGoemans();
@@ -128,10 +142,19 @@ async function scrapeLoop(collectionIndex){
         var scraper = await scrape(collectionIndex);
         if(scraper == true){ // if scraped collections successfully, continue
             success = true;
+            browser.close();
             console.log("Collection's Scraped Successfully")
             missingProducts(); // Scrapes Missing Products
         } else{ // else re-scrape last collection index
-            console.log("Something went wrong, Resuming");
+            const pages = await browser.pages();
+            for(const page of pages) await page.close();
+
+            browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+            });
+            await timer(4000);
+            console.log("Goemans: Something went wrong, Resuming");
             scrapeLoop(x);
         }
     } catch(e){
@@ -139,6 +162,30 @@ async function scrapeLoop(collectionIndex){
     }
 }
 
+// async function checkCount(){
+//     var prev = productNum;
+//     // await timer(60000);
+//     let myInterval = setInterval(async function(){
+//         console.log(`Interval!! Prev value: ${prev}, New: ${productNum}`);
+//         if(success == true){
+//             clearInterval(myInterval);
+//         }else if(prev == productNum){
+//             console.log("Something went wrong, resuming.");
+//             try{
+//                 browser.disconnect();
+//                 browser = await puppeteer.launch({
+//                     headless: true,
+//                     args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+//                 });
+//             } catch(e){
+//                 console.log(e);
+//             }
+//             flag = false;
+//             scrape(x);
+//         }
+//         prev = productNum;
+//     }, 60000);
+// }
 // Finds the missing products, if result array does not have url's from sitemap
 async function missingProducts(){
     try{
@@ -150,10 +197,19 @@ async function missingProducts(){
         }
         console.log(`Additional Products to Scrape: ${additionalProducts.length}`);
         for(var x=0;x<additionalProducts.length;x++){ // Scrape Additonal Products
-            var wait = await scrapeProduct(additionalProducts[x]);
+            var individualScrape = await scrapeProduct(products[x]);
+            if(individualScrape == false){
+                const pages = await browser2.pages();
+                for(const page of pages) await page.close();
+                browser2 = await puppeteer.launch({
+                    headless: true,
+                    args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+                });
+                x--;
+            }
             await timer(1000);
         }
-        await browser2.close();
+        await browser2?.close();
         get("http://localhost:5000/goemanSuccess");
     }catch(e){
         console.log(e);
@@ -163,18 +219,14 @@ async function missingProducts(){
 // Scrapes Singular Product Item
 async function scrapeProduct(url) {
     try{
-        // Retrieves SKU from URL
         const urlSplit = url.split("/");
         const sku = urlSplit[urlSplit.length-1]
-        if(sku == ''){ // If URL is not a product exit
-            return;
-        }
         // Set-up return object
         var obj = {
             name:'',
             sku:`${sku}`,
             url:`${url}`,
-            lastmod:``,
+            lastmod:`${new Date().toISOString().slice(0, 10)}`,
             price:''
         };
         const page = await browser2.newPage();
@@ -188,12 +240,13 @@ async function scrapeProduct(url) {
         }
         });
         page.goto(url, {
-            waitUntil: 'domcontentloaded',
+            waitUntil: 'domcontentloaded'
             //remove timout
-            timeout: 0
+            // timeout: 0
+        }).catch(e =>{
+            console.log(e);
         });
-        process.setMaxListeners(Infinity); // Sets Max Listeners to Inf
-        try{
+        // process.setMaxListeners(Infinity); // Sets Max Listeners to Inf
             // Extract Product Name
             await page.waitForXPath('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
             const [el3] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
@@ -210,11 +263,10 @@ async function scrapeProduct(url) {
             }catch(e){ // Price Doesn't exist
                 obj.price = 0;
             }
-            results.push(obj); // Push Obj into results array
 
             // Database Queries
-            var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '2022-07-05')`
-            var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='' WHERE sku='${obj.sku}'`
+            var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '${lastmod}')`
+            var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='${lastmod}' WHERE sku='${obj.sku}'`
             var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${obj.sku}' LIMIT 1)`)
             await pool.query(insertQuery)
             if(getDbSku.rows[0].exists)
@@ -225,16 +277,13 @@ async function scrapeProduct(url) {
                 await pool.query(insertQuery)
             }
             productNum++;
+            console.log(`Goemans Product: ${productNum}`);
             await page.close();
-        } catch(e){
-            console.log(e);
-            page.close();
-        } finally {
-            console.log(productNum);
-            console.log(obj);
-        }
+            return true;
     }catch(e){
+        productNum--;
         console.log(e);
+        return false;
     }
 }
 

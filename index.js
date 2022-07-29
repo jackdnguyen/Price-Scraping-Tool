@@ -22,10 +22,16 @@ const { scrapCoastAppl, coastApplCounter } = require("./public/scrapCoastAppl");
 var goemansRunning = false;
 var canApplRunning = false;
 var midApplRunning = false;
+var coastApplRunning = false;
 
-var urlPageData = ["default","default","default", 1];
-// Counters for CanAppl, Goemans, MidLands respectively
-var progBar = [0, 0, 0];
+var canApplSuccess = false;
+var goemansSuccess = false;
+var midApplSuccess = false;
+var coastApplSuccess = false;
+
+var urlPageData = ["default","default","default","default", 1];
+// Counters for CanAppl, Goemans, MidLands, CoastAppliance respectively
+var progBar = [0, 0, 0, 0, `false`, 'false', 'false', 'false'];
 
 const path = require("path");
 const { url } = require("inspector");
@@ -291,7 +297,7 @@ app.get('/coastAppl', async (req, res)=> {
 
 //--------------------------------------------------RUNS SCRAPPING BASED ON SELECTED---------------------------------------
 
-app.get("/scrape/default/default/default", async(req,res) => {
+app.get("/scrape/default/default/default/default", async(req,res) => {
   if (req.session.user) {
     res.render("pages/urlPage");
   } 
@@ -299,42 +305,57 @@ app.get("/scrape/default/default/default", async(req,res) => {
     res.redirect("/")
 })
 
-app.get("/scrape/:id/:id2/:id3/:id4", async(req,res) => {
+app.get("/scrape/:id/:id2/:id3/:id4/:id5", async(req,res) => {
   var id = req.params.id.toString();
   var id2 = req.params.id2.toString();
   var id3 = req.params.id3.toString();
-  numRows = req.params.id4.toString();
+  var id4 = req.params.id4.toString();
+  numRows = req.params.id5.toString();
 
   urlPageData[0] = id;
   urlPageData[1] = id2;
   urlPageData[2] = id3;
-  urlPageData[3] = numRows;
+  urlPageData[3] = id4;
+  urlPageData[4] = numRows;
 
-  if(id == 'goemans' || id2 == 'goemans' || id3 == 'goemans'){
+  if(id == 'goemans' || id2 == 'goemans' || id3 == 'goemans' || id4 == 'goemans'){
     if(goemansRunning){
       console.log("Goeman's is already running!");
     }else{
       console.log("Running Goemans");
       goemansRunning = true;
+      goemansSuccess = false;
       scrapGoemans();
     }
   }
-  if (id == 'canAppl' || id2 == 'canAppl' || id3 == 'canAppl'){
+  if (id == 'canAppl' || id2 == 'canAppl' || id3 == 'canAppl' || id4 == 'canAppl'){
     if(canApplRunning){
       console.log("Canadian Appliance is already running!")
     }else{
       console.log("Running Canadian Appliance");
       canApplRunning = true;
+      canApplSuccess = false;
       scrapCanAppl();
     }
   }
-  if (id == 'midAppl' || id2 == 'midAppl' || id3 == 'midAppl'){
+  if (id == 'midAppl' || id2 == 'midAppl' || id3 == 'midAppl' || id4 == 'midAppl'){
     if(midApplRunning){
       console.log("Midland Appliance is already running!")
     }else{
       console.log("Running Midland Appliance");
       midApplRunning = true;
+      midApplSuccess = false;
       scrapMidAppl();
+    }
+  }
+  if (id == 'coastAppl' || id2 == 'coastAppl' || id3 == 'coastAppl' || id4 == 'coastAppl'){
+    if(coastApplRunning){
+      console.log("Coast Appliance is already running!")
+    }else{
+      console.log("Running Coast Appliance");
+      coastApplRunning = true;
+      coastApplSuccess = false;
+      scrapCoastAppl();
     }
   }
 })
@@ -343,6 +364,11 @@ app.get("/progress", async(req,res) =>{
   progBar[0] = canApplCounter();
   progBar[1] = goemansCount();
   progBar[2] = midApplCounter();
+  progBar[3] = coastApplCounter();
+  progBar[4] = canApplSuccess;
+  progBar[5] = goemansSuccess;
+  progBar[6] = midApplSuccess;
+  progBar[7] = coastApplSuccess;
   res.send(`${progBar}`);
 })
 
@@ -352,7 +378,23 @@ app.get("/running", async(req,res) =>{
 
 app.get("/goemanSuccess", async(req,res) =>{
   goemansRunning = false;
+  goemansSuccess = true;
   console.log("Goemans Success");
+})
+app.get("/canApplSuccess", async(req,res) =>{
+  canApplRunning = false;
+  canApplSuccess = true;
+  console.log("Canadian Appliance Success");
+})
+app.get("/midApplSuccess", async(req,res) =>{
+  midApplRunning = false;
+  midApplSuccess = true;
+  console.log("Midland Appliance Success");
+})
+app.get("/coastApplSuccess", async(req,res) =>{
+  coastApplRunning = false;
+  coastApplSuccess = true;
+  console.log("Coast Appliance Success");
 })
 app.get("/urlPageData", async(req,res) =>{
   console.log(urlPageData);

@@ -1,88 +1,266 @@
+require("dotenv").config();
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
-
-//create table canAppl(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT);
-//create table goemans(id SERIAL, sku TEXT, name TEXT, price float(10), url TEXT, lpmod TEXT); 
-//select exists (select 1 from canAppl where sku='000' LIMIT 1);
-var counter = 0;
+const { get } = require('http');
 
 var pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     // ssl: {
     //     rejectUnauthorized: false
     //   }
-  })
+})
 
 let browser;
+let browser2;
 
-function delay(time) {
-    return new Promise(function(resolve) { 
-        setTimeout(resolve, time)
-    });
- }
+const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
 
-async function launchBrowser(){
-    browser = await puppeteer.launch(
-        {
-            // userDataDir: './data',
-            headless: true,
-            args: ['--no-sandbox']
-        })
-}
+var results = [];
+var products = [];
+var additionalProducts = [];
 
-async function sitemap() {
-   try {
-       const URL = 'https://www.canadianappliance.ca/_sitemap_products.php'
-       await launchBrowser()
-
-       const page = await browser.newPage()
-
-       await page.goto(URL,{
-        waitUntil: 'domcontentloaded',
-        timeout: 0,
-       })
-       let data = await page.evaluate(() => {
-           let urls = []
-           let items = document.getElementsByTagName('body')[0].innerHTML.split('\n')
-            for(let i= 0; i < items.length; i++) {
-                urls.push(items[i])
+var productNum = 0;
+var x = 0;
+var pageNum = 1;
+var pageFlag = false;
+var pageEnd= 0;
+var flag = true;
+var success = false;
+const lastmod = new Date().toLocaleString('en-CA', {
+    timeZone: 'America/Los_Angeles',
+  });
+// scrape(0);
+// Extracts all products from Collections
+async function scrape(index){
+    try{
+        // browser = await puppeteer.launch({
+        //     headless: true,
+        //     args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+        // });
+        const page = await browser.newPage();
+        for(x=index; x<collections.length; x++){
+            if(flag == true){ // If no error occured page = 1, else page = page where crashed
+                pageNum = 1;
             }
-            return urls
-       })
+            pageFlag = false;
+            while(true){
+                    console.log(`${collections[x]} Page: ${pageNum}`);
+                    page.goto(`${collections[x]}?page=${pageNum}`, { waitUntil: 'domcontentloaded', timeout: 0 }).catch(e =>{
+                        console.log(e);
+                    });
 
-       return data;
-   } 
-   catch (error) {
-       console.error(error)
-       await browser.close()
-   }
-}
+                    await page.waitForNavigation("networkidle2").catch(e =>{
+                        console.log(e);
+                    });
+                    // div.pi-products > div > div.product-tile-content-block > div.pi-product-desc-name
+                    let name = await page.evaluate(() => {
+                        return Array.from(document.querySelectorAll("div.pi-products > div > div.product-tile-content-block > div.pi-product-desc-name"), 
+                        el =>  el.textContent);
+                    });
+                    if(name.length == 0){
+                        break;
+                    }
+                    let prices = await page.evaluate(() => {
+                        return Array.from(document.querySelectorAll("td.pi-price-final > div > div > a"), 
+                        el =>  el.textContent);
+                    });
+                    if(prices.length == 0){
+                        prices = await page.evaluate(() => {
+                            return Array.from(document.querySelectorAll("td.pi-price-final > div > a"), 
+                            el =>  el.textContent);
+                        });
+                    }
+                    let skuData = await page.evaluate(() => {
+                        return Array.from(document.querySelectorAll("div.product-tile-title-block > h2 > a"), 
+                        el =>  el = {sku:el.textContent, url:el.href});
+                    });
+                    let pageData = await page.evaluate(() => {
+                        return Array.from(document.querySelectorAll("div.pagination > a"), 
+                        el =>  parseInt(el.textContent));
+                    });
+                    if(pageData.length == 0){
+                        pageEnd = 1;
+                        pageFlag = true;
+                    }else if(!pageFlag){
+                        pageEnd =pageData[pageData.length-2];
+                        pageFlag = true;
+                    }
+                    // console.log(pageData);
+                    // console.log(`PAGE END: ${pageEnd}`);
+                    // console.log(name.length);
+                    // console.log(prices.length);
+                    // #sort_results > div.pi-products > div:nth-child(19) > div.product-tile-price-block > table > tbody > tr > td > div
+                    if(name.length != prices.length){
+                        let nullPrice = await page.evaluate(() => {
+                            return Array.from(document.querySelectorAll("div.sres_price"), 
+                            el =>  el.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.getAttribute('data-href'));
+                        });
+                        let urlArray = [];
+                        for(var i=0;i<skuData.length;i++){
+                            urlArray.push(skuData[i].url);
+                        }
+                        for(var j=0;j<nullPrice.length;j++){
+                            let index = urlArray.indexOf(nullPrice[j]);
+                            prices.splice(index,0,'0');
+                        }
+                        if(name.length != prices.length){
+                            let nullPrice2 = await page.evaluate(() => {
+                                return Array.from(document.querySelectorAll("div.product-not-for-sale"), 
+                                el =>  el.parentNode.parentNode.getAttribute('data-href'));
+                            });
+                            for(var j=0;j<nullPrice2.length;j++){
+                                let index = urlArray.indexOf(nullPrice2[j]);
+                                prices.splice(index,0,'0');
+                            }
+                        }
+                        // console.log(nullPrice);  #sort_results > div.pi-products > div:nth-child(27) > div.product-tile-price-block > div.product-not-for-sale
+                    }
+                    for(var i=0; i<name.length;i++){
+                        let skuArray = skuData[i].sku.split(" ");
+                        let modifiedName = skuArray[0] + " " + name[i].replace(/[\r\n]/gm, ' ').trim();  
+                        let url = skuData[i].url;
+                        let price = prices[i].replace(/\$|,/g, '');
+                        let sku = skuArray[skuArray.length-1];       
+                        // console.log(modifiedName);
+                        // console.log(sku);
+                        // console.log(parseFloat(price));
+                        // console.log(url);
+                        var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${sku}','${modifiedName}',${price},'${url}', '${lastmod}')`
+                        var updateQuery = `UPDATE canAppl SET name='${modifiedName}', price=${price}, url='${url}', lpmod='${lastmod}' WHERE sku='${sku}'`
+                        var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM canAppl WHERE sku='${sku}' LIMIT 1)`)
 
-async function scrapCanAppl(){
-    let urls = await sitemap()
-    await browser.close()
-    await launchBrowser()
-
-    for(let i = 0; i < 1000;) {
-        await scraper(browser, urls[i], i)
-        await delay(1000)
-        i++;
-
-        if(i % 100 === 0)
-        {
-            await browser.close()
-            await delay(10000)
-            await launchBrowser()
+                        if(getDbSku.rows[0].exists)
+                        {
+                            await pool.query(updateQuery)
+                        }
+                        else{
+                            await pool.query(insertQuery)
+                        }
+                        results.push(url);
+                        productNum++;
+                    }
+                    console.log(`Canadian Appliance Product: ${productNum}`);
+                    flag = true;
+                    await timer(1400);
+                    if(pageNum == pageEnd){
+                        break;
+                    }
+                    pageNum++;
+            }
         }
+        browser.close();
+        return true;
+    }catch(e){
+        console.log(e); // Timed Out
+        flag = false; // Saves page num
+        console.log(x);
+        return false;
+    }
+}
+// 11931 Products in Collections 7/20/2021
+// sitemap();
+// Scrapes All Product Url's from Sitemap 
+async function scrapCanAppl(){
+    try{
+        const browserSiteMap = await puppeteer.launch({headless:true, args: ['--no-sandbox']});
+        const page = await browserSiteMap.newPage();
+        for(var i=1; i<4; i++){
+            page.goto(`https://www.canadianappliance.ca/sitemaps/sitemap-${i}.xml`);
+            page.setDefaultNavigationTimeout(0); // Sets navigation limit to inf
+            await page.waitForNavigation({ // Wait until network is idle
+                waitUntil: 'networkidle0',
+            });
+            let element = await page.evaluate(() => {
+                // Selects all products in the container, el=>el.textContent makes each element textContent of product data
+                return Array.from(document.querySelectorAll(".pretty-print .folder .folder .opened div:nth-child(2) span:nth-child(2)"), el => el.textContent);
+            });
+            for(var i=0; i<element.length; i++){
+                const urlSplit = element[i].split(".");
+                if(urlSplit[urlSplit.length-1] == 'html'){
+                    if(!element[i].includes("Reviews") && !element[i].includes("fr-CA")){
+                        products.push(element[i]);
+                        //fr-CA
+                    }
+                }
+            }
+        }
+        browserSiteMap.close();
+    }catch(e){
+        console.log(e);
+    } finally {
+        console.log("Scraped Canadian Appliance's Sitemap");
+        console.log(`Products: ${products.length}`);
+        // for(var i=0; i<products.length;i++){
+        //     console.log(products[i]);
+        //     await timer(1500);
+        // }
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+          });
+        scrapeLoop(0); // Runs ScrapeLoop
+    }
+}
+// sitemap();
 
-       }
-       await browser.close()
+async function scrapeLoop(collectionIndex){
+    try{
+        var scraper = await scrape(collectionIndex);
+        if(scraper == true){ // if scraped collections successfully, continue
+            success = true;
+            browser.close();
+            console.log("Collection's Scraped Successfully")
+            missingProducts(); // Scrapes Missing Products
+        } else{ // else re-scrape last collection index
+            const pages = await browser.pages();
+            for(const page of pages) await page.close();
+
+            browser = await puppeteer.launch({
+                headless: true,
+                args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+            });
+            await timer(4000);
+            console.log("Something went wrong, Resuming");
+            scrapeLoop(x);
+        }
+    } catch(e){
+        console.log(e);
+    }
+}
+// Finds the missing products, if result array does not have url's from sitemap
+async function missingProducts(){
+    try{
+        browser2 = await puppeteer.launch({headless: true, args: ['--no-sandbox']}); // Launch New Browser for additional products
+        for(var i=0; i<products.length;i++){
+            if(results.includes(products[i]) == false){ // If results does not have product, push into additionalProducts Array
+                additionalProducts.push(products[i]);
+            }
+        }
+        console.log(`Additional Products to Scrape: ${additionalProducts.length}`);
+        for(var x=0;x<additionalProducts.length;x++){ // Scrape Additonal Products
+            let individualScrape = await scrapeProduct(additionalProducts[x]);
+            if(individualScrape == false){
+                const pages = await browser2.pages();
+                for(const page of pages) await page.close();
+                browser2 = await puppeteer.launch({
+                    headless: true,
+                    args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+                });
+            }
+            await timer(1000);
+        }
+        await browser2?.close();
+        get("http://localhost:5000/canApplSuccess");
+        console.log("Canadian Appliance Scraped Successfully.");
+    }catch(e){
+        console.log(e);
+    }
 }
 
-async function scraper(browser, link, index) {  
+async function scrapeProduct(link) {  
     try {
         const URL = link
-        const page = await browser.newPage()
+        const page = await browser2.newPage()
 
         await page.goto(URL, { 
             waitUntil: 'domcontentloaded',
@@ -116,13 +294,13 @@ async function scraper(browser, link, index) {
             }
         })
         if(data == null) {
-            console.log(index)
+            // console.log(index)
             await page.close()
         }
         else {
             //Database Queries
-            var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '2020-06-20')`
-            var updateQuery = `UPDATE canAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='2020-06-20' WHERE sku='${data[0].sku}'`
+            var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '${lastmod}')`
+            var updateQuery = `UPDATE canAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='${lastmod}' WHERE sku='${data[0].sku}'`
             var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM canAppl WHERE sku='${data[0].sku}' LIMIT 1)`)
 
             if(getDbSku.rows[0].exists)
@@ -132,20 +310,45 @@ async function scraper(browser, link, index) {
             else{
                 await pool.query(insertQuery)
             }
-            counter++;
-            console.log(index)
-            console.log(data)
+            productNum++;
+            console.log(`Canadian Appliance Product: ${productNum}`);
+            // console.log(data)
             await page.close()
+            return true;
         }
     } 
     catch (error) {
             console.error(error)
+            return false;
     }
 }
 
 function canApplCounter(){
-    return counter;
+    return productNum;
 }
 
 module.exports = {scrapCanAppl, canApplCounter};
-// scrapCanAppl();
+
+const collections = [
+    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/French-Door-Refrigerators-48/',
+    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/Side-by-Side-Refrigerators-46/',
+    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/Bottom-Mount-Refrigerators-45/',
+    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/Top-Mount-Refrigerators-44/',
+    'https://www.canadianappliance.ca/Built-In/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/',
+    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/All-Refrigerator-50/',
+    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Compact-Refrigeration-40/',
+    'https://www.canadianappliance.ca/Freezers-42/',
+    'https://www.canadianappliance.ca/Cooktops-and-Stove-Tops-17/',
+    'https://www.canadianappliance.ca/Wall-Ovens-19/',
+    'https://www.canadianappliance.ca/Microwave-Ovens-20/',
+    'https://www.canadianappliance.ca/Wall-Ovens-19/Microwave-Wall-Ovens-32/',
+    'https://www.canadianappliance.ca/Under-Cabinet/Ventilation-Range-Hoods-18/',
+    'https://www.canadianappliance.ca/Ventilation-Range-Hoods-18/',
+    'https://www.canadianappliance.ca/Dishwashers-4/',
+    'https://www.canadianappliance.ca/Washers-And-Washing-Machines-66/',
+    'https://www.canadianappliance.ca/Washers-And-Washing-Machines-66/Washer-and-Dryer-Sets-215/',
+    'https://www.canadianappliance.ca/Product-Accessories-232/Laundry-Accessories-92/',
+    'https://www.canadianappliance.ca/Dryers-67/',
+    'https://www.canadianappliance.ca/BBQ-Grills-7/',
+    'https://www.canadianappliance.ca/Product-Accessories-232/BBQ-Accessories-252/',
+];
