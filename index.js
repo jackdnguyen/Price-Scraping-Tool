@@ -165,6 +165,10 @@ const allData = async ()=>{
   const mergedData = result[0].concat(result[1]).concat(result[2]).concat(result[3]);
   await downloadData('all', mergedData);
 
+  mergedData.sort((a, b)=>{
+    return (a.id)-(b.id);
+  })
+
 const data = { results: mergedData, name:company_name}
 return data;  
 }
@@ -359,6 +363,9 @@ app.post('/low', async(req, res)=>{
     let data2 = await getPricesFilter('goemans');
     let data3 = await getPricesFilter('canAppl');
     data = (data1.low).concat(data2.low).concat(data3.low);
+    data.sort((a, b)=>{
+      return (a.id)-(b.id);
+    });
     data = {low: data }
     if(data.low.length == 0)
       data = eData;
@@ -403,6 +410,9 @@ app.post('/high', async(req, res)=>{
     let data2 = await getPricesFilter('goemans');
     let data3 = await getPricesFilter('canAppl');
     data = (data1.high).concat(data2.high).concat(data3.high);
+    data.sort((a, b)=>{
+      return (a.id)-(b.id);
+    });
     data = {high: data }
 
     if(data.high.length == 0)
