@@ -30,8 +30,8 @@ var midApplSuccess = false;
 var coastApplSuccess = false;
 
 var urlPageData = ["default","default","default","default", 1];
-// Counters for CanAppl, Goemans, MidLands, CoastAppliance respectively
-var progBar = [0, 0, 0, 0, `false`, 'false', 'false', 'false'];
+// Counters & Successes for CanAppl, Goemans, MidLands, CoastAppliance respectively
+var progBar = [0, 0, 0, 0, false, false, false, false];
 
 const path = require("path");
 const { url } = require("inspector");

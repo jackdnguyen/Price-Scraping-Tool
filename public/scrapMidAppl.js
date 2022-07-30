@@ -194,6 +194,7 @@ async function missingProducts(){
         }
         await browser2?.close();
         get("http://localhost:5000/midApplSuccess");
+        console.log("Midland's Scraped Successfully")
     }catch(e){
         console.log(e);
     }
@@ -245,8 +246,10 @@ async function scrapeProduct(link) {
         }
         else {
             // Database Queries
-            var insertQuery = `INSERT INTO midAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '${lastmod}')`
-            var updateQuery = `UPDATE midAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='${lastmod}' WHERE sku='${data[0].sku}'`
+            let name = data[0].name;
+            name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
+            var insertQuery = `INSERT INTO midAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${name}',${data[0].price},'${URL}', '${lastmod}')`
+            var updateQuery = `UPDATE midAppl SET name='${name}', price=${data[0].price}, url='${URL}', lpmod='${lastmod}' WHERE sku='${data[0].sku}'`
             var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM midAppl WHERE sku='${data[0].sku}' LIMIT 1)`)
 
             if(getDbSku.rows[0].exists)

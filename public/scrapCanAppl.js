@@ -118,6 +118,7 @@ async function scrape(index){
                     for(var i=0; i<name.length;i++){
                         let skuArray = skuData[i].sku.split(" ");
                         let modifiedName = skuArray[0] + " " + name[i].replace(/[\r\n]/gm, ' ').trim();  
+                        modifiedName = modifiedName.replace(/[^a-z0-9,.\-\" ]/gi, '');
                         let url = skuData[i].url;
                         let price = prices[i].replace(/\$|,/g, '');
                         let sku = skuArray[skuArray.length-1];       
@@ -299,8 +300,10 @@ async function scrapeProduct(link) {
         }
         else {
             //Database Queries
-            var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${data[0].name}',${data[0].price},'${URL}', '${lastmod}')`
-            var updateQuery = `UPDATE canAppl SET name='${data[0].name}', price=${data[0].price}, url='${URL}', lpmod='${lastmod}' WHERE sku='${data[0].sku}'`
+            let name = data[0].name;
+            name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
+            var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${name}',${data[0].price},'${URL}', '${lastmod}')`
+            var updateQuery = `UPDATE canAppl SET name='${name}', price=${data[0].price}, url='${URL}', lpmod='${lastmod}' WHERE sku='${data[0].sku}'`
             var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM canAppl WHERE sku='${data[0].sku}' LIMIT 1)`)
 
             if(getDbSku.rows[0].exists)

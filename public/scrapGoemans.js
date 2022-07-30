@@ -263,7 +263,7 @@ async function scrapeProduct(url) {
             }catch(e){ // Price Doesn't exist
                 obj.price = 0;
             }
-
+            obj.name = obj.name.replace(/[^a-z0-9,.\-\" ]/gi, '');
             // Database Queries
             var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '${lastmod}')`
             var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='${lastmod}' WHERE sku='${obj.sku}'`

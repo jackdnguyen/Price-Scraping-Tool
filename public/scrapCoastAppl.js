@@ -1,6 +1,7 @@
 require("dotenv").config();
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
+const { get } = require('http');
 
 var productNum = 0;
 var x = 0;
@@ -77,7 +78,7 @@ async function scrape(index){
                     let brand = nameSplit[0].trim();
                     let name = nameSplit[1].trim();
                     name = brand + " - " + name;
-
+                    name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
                     let priceSplit = element[i].split("$");
                     let price;
                     if(priceSplit.length === 4){
@@ -128,7 +129,7 @@ async function scrape(index){
 
                 pageNum++; // Increment page
                 flag = true;
-                // await timer(1400); // Timer for 1.4s
+                await timer(1400); // Timer for 1.4s
             }
         }
         page.close();
@@ -283,6 +284,7 @@ async function scrapeIndividual(url){
         let splitText = value.split('-');
         let sku = splitText[splitText.length-1].trim();
         let name = value;
+        name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
         let price;
 
         try{ // product-meta__title heading h1 product-h1
