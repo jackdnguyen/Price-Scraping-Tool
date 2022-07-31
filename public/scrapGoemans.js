@@ -1,14 +1,6 @@
-require("dotenv").config();
 const puppeteer = require('puppeteer');
-const { Pool } = require('pg')
 const { get } = require('http');
-
-var pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //     rejectUnauthorized: false
-    //   }
-})
+const knex = require('../knex.js');
 
 let browser;
 let browser2;
@@ -24,9 +16,6 @@ var x = 0;
 var pageNum = 1;
 var flag = true;
 var success = false;
-const lastmod = new Date().toLocaleString('en-CA', {
-    timeZone: 'America/Los_Angeles',
-});
 
 // Extracts all products from Collections
 async function scrape(index){
@@ -60,27 +49,23 @@ async function scrape(index){
                     // console.log(prices.length)
                     for(var i=0; i< prices.length ; i++){
                         prices[i].name = prices[i].brand + " - " + prices[i].name;
-                        // console.log(prices[i]);
-                        // console.log(url[i]);
+
                         prices[i].name = prices[i].name.replace(/[^a-z0-9,.\-\" ]/gi, '')
-                        // let sku = prices[i].sku.toString();
-                        // let name = removeSpecials(prices[i].name.toString());
-                        // let price = parseFloat(prices[i].price);
-                        // let urlLink = url[i].toString();
-                            // Database Queries
-                        var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${prices[i].sku}','${prices[i].name}',${prices[i].price},'${url[i]}', '${lastmod}')`
-                        var updateQuery = `UPDATE goemans SET name='${prices[i].name}', price=${prices[i].price}, url='${url[i]}', lpmod='${lastmod}' WHERE sku='${prices[i].sku}'`
-                        var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${prices[i].sku}' LIMIT 1)`)
-                        //await pool.query(insertQuery)
-                        if(getDbSku.rows[0].exists)
-                        {
-                            await pool.query(updateQuery)
+
+
+                        //Database Queries
+                        const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku = ?', prices[i].sku);
+
+
+                        var time = new Date().toLocaleString();
+
+                        if(searchQuery.length != 0){
+                            await knex.update({name: prices[i].name, price: prices[i].price, url: url[i], lpmod: time}).where({sku: prices[i].sku}).from('goemans');
                         }
                         else{
-                            await pool.query(insertQuery)
+                            await knex.insert({company_name: 'Goemans', sku: prices[i].sku, name: prices[i].name, price: prices[i].price, url: url[i], lpmod: time}).into('goemans');
                         }
-                        results.push(url[i].toString());
-                        // console.log('');
+
                         productNum++;
                     }
                     console.log(`Goemans Product ${productNum}`);
@@ -162,30 +147,6 @@ async function scrapeLoop(collectionIndex){
     }
 }
 
-// async function checkCount(){
-//     var prev = productNum;
-//     // await timer(60000);
-//     let myInterval = setInterval(async function(){
-//         console.log(`Interval!! Prev value: ${prev}, New: ${productNum}`);
-//         if(success == true){
-//             clearInterval(myInterval);
-//         }else if(prev == productNum){
-//             console.log("Something went wrong, resuming.");
-//             try{
-//                 browser.disconnect();
-//                 browser = await puppeteer.launch({
-//                     headless: true,
-//                     args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
-//                 });
-//             } catch(e){
-//                 console.log(e);
-//             }
-//             flag = false;
-//             scrape(x);
-//         }
-//         prev = productNum;
-//     }, 60000);
-// }
 // Finds the missing products, if result array does not have url's from sitemap
 async function missingProducts(){
     try{
@@ -264,18 +225,20 @@ async function scrapeProduct(url) {
                 obj.price = 0;
             }
             obj.name = obj.name.replace(/[^a-z0-9,.\-\" ]/gi, '');
-            // Database Queries
-            var insertQuery = `INSERT INTO goemans(sku,name,price,url,lpmod) VALUES('${obj.sku}','${obj.name}',${obj.price},'${url}', '${lastmod}')`
-            var updateQuery = `UPDATE goemans SET name='${obj.name}', price=${obj.price}, url='${url}', lpmod='${lastmod}' WHERE sku='${obj.sku}'`
-            var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM goemans WHERE sku='${obj.sku}' LIMIT 1)`)
-            await pool.query(insertQuery)
-            if(getDbSku.rows[0].exists)
-            {
-                await pool.query(updateQuery)
+
+            //Database Queries
+            const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku = ?', obj.sku);
+
+
+            var time = new Date().toLocaleString();
+
+            if(searchQuery.length != 0){
+                await knex.update({name: obj.name, price: obj.price, url: url, lpmod: time}).where({sku: obj.sku}).from('goemans');
             }
             else{
-                await pool.query(insertQuery)
+                await knex.insert({company_name: 'Goemans', sku: obj.sku, name: obj.name, price: obj.price, url: url, lpmod: time}).into('goemans');
             }
+
             productNum++;
             console.log(`Goemans Product: ${productNum}`);
             await page.close();

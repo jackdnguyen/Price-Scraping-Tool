@@ -1,14 +1,6 @@
-require("dotenv").config();
 const puppeteer = require('puppeteer');
-const { Pool } = require('pg')
 const { get } = require('http');
-
-var pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //     rejectUnauthorized: false
-    //   }
-})
+const knex = require('../knex.js');
 
 let browser;
 let browser2;
@@ -24,9 +16,7 @@ var x = 0;
 var pageNum = 1;
 var flag = true;
 var success = false;
-const lastmod = new Date().toLocaleString('en-CA', {
-    timeZone: 'America/Los_Angeles',
-});
+
 // Extracts all products from Collections
 async function scrape(index){
     try{
@@ -64,9 +54,7 @@ async function scrape(index){
                         return Array.from(document.querySelectorAll("#__next > div.jss1.jss2 > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root.avb-typography.jss161.MuiGrid-container > div > div > article > div.jss171 > h3 > a"),
                         el => el = {name: el.textContent, url: el.href});
                     });  
-                    // console.log(prices.length);
-                    // console.log(skuArray.length);
-                    // console.log(names.length)
+
                     for(var i=0; i< prices.length ; i++){
                         let skuSplit = skuArray[i].split(":");
                         let sku = skuSplit[skuSplit.length-1].trim();
@@ -78,22 +66,20 @@ async function scrape(index){
                             price = parseFloat(prices[i].replace(/\$|,/g, ''));
                         }
                         results.push(names[i].url);
-                        // console.log(names[i].name);
-                        // console.log(sku);
-                        // console.log(price);
-                        // console.log(names[i].url);
-                        //Database Queries
-                        var insertQuery = `INSERT INTO midAppl(sku,name,price,url,lpmod) VALUES('${sku}','${name}',${price},'${names[i].url}', '${lastmod}')`
-                        var updateQuery = `UPDATE midAppl SET name='${name}', price=${price}, url='${names[i].url}', lpmod='${lastmod}' WHERE sku='${sku}'`
-                        var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM midAppl WHERE sku='${sku}' LIMIT 1)`)
 
-                        if(getDbSku.rows[0].exists)
-                        {
-                            await pool.query(updateQuery)
+                        //Database Queries
+                        const searchQuery = await knex.select('sku').from('midAppl').whereRaw('sku = ?', sku);
+
+
+                        var time = new Date().toLocaleString();
+
+                        if(searchQuery.length != 0){
+                            await knex.update({name: name, price: price, url: names[i].url, lpmod: time}).where({sku: sku}).from('midAppl');
                         }
                         else{
-                            await pool.query(insertQuery)
-                        }
+                            await knex.insert({company_name: 'Midland Appliance', sku: sku, name: name, price: price, url: names[i].url, lpmod: time}).into('midAppl');
+                        }                        
+                        
                         productNum++;
                     }
                     console.log(`Midland Product: ${productNum}`);
@@ -248,17 +234,19 @@ async function scrapeProduct(link) {
             // Database Queries
             let name = data[0].name;
             name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
-            var insertQuery = `INSERT INTO midAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${name}',${data[0].price},'${URL}', '${lastmod}')`
-            var updateQuery = `UPDATE midAppl SET name='${name}', price=${data[0].price}, url='${URL}', lpmod='${lastmod}' WHERE sku='${data[0].sku}'`
-            var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM midAppl WHERE sku='${data[0].sku}' LIMIT 1)`)
 
-            if(getDbSku.rows[0].exists)
-            {
-                await pool.query(updateQuery)
+            const searchQuery = await knex.select('sku').from('midAppl').whereRaw('sku = ?', data[0].sku);
+
+
+            var time = new Date().toLocaleString();
+
+            if(searchQuery.length != 0){
+                await knex.update({name: name, price: data[0].price, url: URL, lpmod: time}).where({sku: data[0].sku}).from('midAppl');
             }
             else{
-                await pool.query(insertQuery)
-            }
+                await knex.insert({company_name: 'Midland Appliance', sku: data[0].sku, name: name, price: data[0].price, url: URL, lpmod: time}).into('midAppl');
+            }            
+
             productNum++;
             console.log(`Midland Appliance Product: ${productNum}`);
             // console.log(data)
