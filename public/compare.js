@@ -2,45 +2,36 @@ const knex = require('../knex.js')
 
 const getPricesFilter = async (tableName)=>{
 
-    var data1 = await knex.select('*').from('coastAppl').join(tableName, function(){ //returns goemans
+    var low = await knex.select('*').from('coastAppl').join(tableName, function(){ 
         this
-            .on('coastAppl.sku','=', tableName +'.sku')
+            .on(tableName +'.sku','like', 'coastAppl.sku')
+            .andOn(tableName +'.price','<', 'coastAppl.price')
     })
 
-    var data2 = await knex.select('*').from(tableName).join('coastAppl', function(){ //returns coastAppl
+    var high = await knex.select('*').from('coastAppl').join(tableName, function(){
         this
-            .on('coastAppl.sku','=', tableName + '.sku');
-    })
-
-    let low = [];
-    let high = [];
-
-    data1.forEach((row1)=>{  //goemans rows
-        data2.forEach((row2)=>{ //coastAppl rows
-            if(row1.sku == row2.sku) 
-                if(row1.price > row2.price){
-                    high.push(row1);
-                    return;
-                }
-                else if(row1.price < row2.price) {
-                    low.push(row1);
-                    return;
-                }
-        })
-    })
-
-    high.sort((a, b)=>{
-        return (a.id) - (b.id);
-    })
-
-    low.sort((a, b)=>{
-        return (a.id) - (b.id);
+            .on(tableName +'.sku','like', 'coastAppl.sku')
+            .andOn(tableName +'.price','>', 'coastAppl.price')
     })
 
     var data = {low: low, high: high};
-    console.log(data.high);
-    // return data;
+
+    return data;
 }
 
-getPricesFilter('goemans');
+
+const getMatch =  async ()=> {
+    var data1 = 'RD14257N';
+    var data2 = 'RD14257';
+    var sku = 'L';
+
+    var searchQuery3 = await knex.select('*').from('canAppl').where('sku','like', '%'+ sku +'%');
+      console.log(searchQuery3);
+
+    // const result = data2.includes(data1);
+    // console.log(result);
+
+}
+
+getPricesFilter('canAppl');
 

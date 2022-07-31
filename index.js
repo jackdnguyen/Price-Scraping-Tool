@@ -10,7 +10,7 @@ var cors = require('cors') //cross-origin resources sharing
 var knex = require('./knex')
 
 //imports scraping scripts 
-const { scrapGoemans, getCount } = require("./public/scrapGoemans.js");
+const { scrapGoemans, goemansCount } = require("./public/scrapGoemans.js");
 const { scrapCanAppl, canApplCounter } = require("./public/scrapCanAppl.js");
 const { scrapMidAppl, midApplCounter } = require("./public/scrapMidAppl.js");
 const { scrapCoastAppl, coastApplCounter } = require("./public/scrapCoastAppl");
@@ -109,10 +109,22 @@ app.get("/dashboard", (req, res) => {
 //-------------------------------------------------------------RENDERS SCRAPED_DATA PAGE WITH LAST CHECK----------------------------------------------
 app.get("/display", async (req, res) => {
   if (req.session.user) {
-    var lcheck1 = await knex.select('lpmod').from('canAppl').orderBy('id').limit(1);
-    var lcheck2 = await knex.select('lpmod').from('goemans').orderBy('id').limit(1);
-    var lcheck3 = await knex.select('lpmod').from('midAppl').orderBy('id').limit(1);
-    var lcheck4 = await knex.select('lpmod').from('coastAppl').orderBy('id').limit(1);
+    var lcheck1 = '';
+    var lcheck2 = '';
+    var lcheck3 = '';
+    var lcheck4 = '';
+
+    try{
+    lcheck1 = await knex.select('lpmod').from('canAppl').orderBy('id').limit(1);
+    lcheck2 = await knex.select('lpmod').from('goemans').orderBy('id').limit(1);
+    lcheck3 = await knex.select('lpmod').from('midAppl').orderBy('id').limit(1);
+    lcheck4 = await knex.select('lpmod').from('coastAppl').orderBy('id').limit(1);
+    }
+    catch (e)
+    {
+      console.log(e);
+    }
+
     var na ='N/A';
 
     if (lcheck1 != '')
@@ -266,10 +278,10 @@ if (req.session.user) {
   console.log(company_name);
   console.log(sku)
 
-  var searchQuery1 = await knex.select('*').from('midAppl').whereRaw('sku = ?', sku);
-  var searchQuery2 = await knex.select('*').from('goemans').whereRaw('sku = ?', sku);
-  var searchQuery3 = await knex.select('*').from('canAppl').whereRaw('sku = ?', sku);
-  var searchQuery4 = await knex.select('*').from('coastAppl').whereRaw('sku = ?', sku);
+  var searchQuery1 = await knex.select('*').from('midAppl').where('sku','like', '%'+ sku +'%');
+  var searchQuery2 = await knex.select('*').from('goemans').where('sku','like', '%'+ sku +'%');
+  var searchQuery3 = await knex.select('*').from('canAppl').where('sku','like', '%'+ sku +'%');
+  var searchQuery4 = await knex.select('*').from('coastAppl').where('sku','like', '%'+ sku +'%');
 
   if (company_name == 'Midland Appliance'){
     var searchQuery = searchQuery1;
@@ -440,44 +452,22 @@ app.post('/high', async(req, res)=>{
 //returns high and low filtered values
 const getPricesFilter = async (tableName)=>{
 
-  var data1 = await knex.select('*').from('coastAppl').join(tableName, function(){ //returns goemans
+  var low = await knex.select('*').from('coastAppl').join(tableName, function(){ 
+    this
+        .on(tableName +'.sku','like', 'coastAppl.sku')
+        .andOn(tableName +'.price','<', 'coastAppl.price')
+  })
+
+  var high = await knex.select('*').from('coastAppl').join(tableName, function(){
       this
-          .on('coastAppl.sku','=', tableName +'.sku')
+          .on(tableName +'.sku','like', 'coastAppl.sku')
+          .andOn(tableName +'.price','>', 'coastAppl.price')
   })
 
-  var data2 = await knex.select('*').from(tableName).join('coastAppl', function(){ //returns coastAppl
-      this
-          .on('coastAppl.sku','=', tableName + '.sku');
-  })
+  var data = {low: low, high: high};
 
-  let low = [];
-  let high = [];
-
-  data1.forEach((row1)=>{  //goemans rows
-      data2.forEach((row2)=>{ //coastAppl rows
-          if(row1.sku == row2.sku) 
-              if(row1.price > row2.price){
-                  high.push(row1);
-                  return;
-              }
-              else if(row1.price < row2.price) {
-                  low.push(row1);
-                  return;
-              }
-      })
-  })
-
-  high.sort((a, b)=>{
-    return (a.id) - (b.id);
-  })
-
-  low.sort((a, b)=>{
-      return (a.id) - (b.id);
-  })
-
-
-  var data = {low: low, high: high}
   return data;
+
 }
 
 
