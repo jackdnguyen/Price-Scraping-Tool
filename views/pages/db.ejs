@@ -52,16 +52,6 @@
             </div>
         </form>
         </div> 
-
-        <!-- <div class='high-low-filter'>
-            <form action="/hlfilter" method="post">
-              <select>
-                <option selected><input name="default" id="default" type="button" value="Sort By:" onclick="form.submit()"></option>
-                <option><input name="low" id="low" type="button" value="Low" onclick="form.submit()"></option>
-                <option><input name="high" id="high" type="button" value="High" onclick="form.submit()"></option>
-              </select>
-            </form>    
-        </div> -->
             
         <div>
           <form action="/csv-download" method="post">
@@ -73,6 +63,7 @@
       <table id="displayData">
         <tr>
           <th>No.</th>
+          <th>Company's name</th>
           <th>SKU</th>
           <th>Product's Name</th>
           <th>Sales Price</th>
@@ -83,6 +74,7 @@
           <% results.forEach(function(r) { %>
           <tr>
               <td><%=r.id%></td>
+              <td><%=r.company_name%></td>
               <td><%=r.sku%></td>
               <td><%=r.name%></td>
               <td><%=r.price%></td>

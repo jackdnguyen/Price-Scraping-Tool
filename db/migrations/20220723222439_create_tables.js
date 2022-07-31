@@ -6,6 +6,7 @@ exports.up = function(knex) {
     return knex.schema
     .createTable('canAppl', function(table) {
         table.increments('id').primary()
+        table.text('company_name').notNullable()
         table.text('sku').notNullable()
         table.text('name').notNullable()
         table.float('price').notNullable()
@@ -16,6 +17,7 @@ exports.up = function(knex) {
     })
     .createTable('goemans', function(table) {
         table.increments('id').primary()
+        table.text('company_name').notNullable()
         table.text('sku').notNullable()
         table.text('name').notNullable()
         table.float('price').notNullable()
@@ -26,6 +28,7 @@ exports.up = function(knex) {
     })
     .createTable('midAppl', function(table) {
         table.increments('id').primary()
+        table.text('company_name').notNullable()
         table.text('sku').notNullable()
         table.text('name').notNullable()
         table.float('price').notNullable()
@@ -36,6 +39,7 @@ exports.up = function(knex) {
     })
     .createTable('coastAppl', function(table){
         table.increments('id').primary()
+        table.text('company_name').notNullable()
         table.text('sku').notNullable()
         table.text('name').notNullable()
         table.float('price').notNullable()
