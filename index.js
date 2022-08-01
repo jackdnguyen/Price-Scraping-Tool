@@ -1,10 +1,10 @@
 const tempEnv = require("dotenv").config();
 const express = require("express");
-const session = require("cookie-session");
+const session = require("cookie-session");//test
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 const fs = require('fs');
-const request = require('supertest');
+const request = require('supertest');//test
 
 const assert = require('assert');
 var cors = require('cors') //cross-origin resources sharing
