@@ -54,16 +54,22 @@ async function scrape(index){
 
 
                         //Database Queries
-                        const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku = ?', prices[i].sku);
+                        try {
+                            const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku ','=', prices[i].sku);
 
 
-                        var time = new Date().toLocaleString();
+                            var time = new Date().toLocaleString();
 
-                        if(searchQuery.length != 0){
-                            await knex.update({name: prices[i].name, price: prices[i].price, url: url[i], lpmod: time}).where({sku: prices[i].sku}).from('goemans');
+                            if(searchQuery.length != 0){
+                                await knex.update({name: prices[i].name, price: prices[i].price, url: url[i], lpmod: time}).where({sku: prices[i].sku}).from('goemans');
+                            }
+                            else{
+                                await knex.insert({company_name: 'Goemans', sku: prices[i].sku, name: prices[i].name, price: prices[i].price, url: url[i], lpmod: time}).into('goemans');
+                            }
                         }
-                        else{
-                            await knex.insert({company_name: 'Goemans', sku: prices[i].sku, name: prices[i].name, price: prices[i].price, url: url[i], lpmod: time}).into('goemans');
+                        catch(e)
+                        {
+                            console.log(e);
                         }
 
                         productNum++;
@@ -227,16 +233,20 @@ async function scrapeProduct(url) {
             obj.name = obj.name.replace(/[^a-z0-9,.\-\" ]/gi, '');
 
             //Database Queries
-            const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku = ?', obj.sku);
+            try{
+                const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku','=', obj.sku);
 
+                var time = new Date().toLocaleString();
 
-            var time = new Date().toLocaleString();
-
-            if(searchQuery.length != 0){
-                await knex.update({name: obj.name, price: obj.price, url: url, lpmod: time}).where({sku: obj.sku}).from('goemans');
+                if(searchQuery.length != 0){
+                    await knex.update({name: obj.name, price: obj.price, url: url, lpmod: time}).where({sku: obj.sku}).from('goemans');
+                }
+                else{
+                    await knex.insert({company_name: 'Goemans', sku: obj.sku, name: obj.name, price: obj.price, url: url, lpmod: time}).into('goemans');
+                }
             }
-            else{
-                await knex.insert({company_name: 'Goemans', sku: obj.sku, name: obj.name, price: obj.price, url: url, lpmod: time}).into('goemans');
+            catch(e){
+                console.log(e);
             }
 
             productNum++;

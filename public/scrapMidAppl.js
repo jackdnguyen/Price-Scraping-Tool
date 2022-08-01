@@ -68,16 +68,23 @@ async function scrape(index){
                         results.push(names[i].url);
 
                         //Database Queries
-                        const searchQuery = await knex.select('sku').from('midAppl').whereRaw('sku = ?', sku);
+
+            
+                        try {
+                            const searchQuery = searchQuery = await knex.select('sku').from('midAppl').where('sku','=', sku);
 
 
-                        var time = new Date().toLocaleString();
+                            var time = new Date().toLocaleString();
 
-                        if(searchQuery.length != 0){
-                            await knex.update({name: name, price: price, url: names[i].url, lpmod: time}).where({sku: sku}).from('midAppl');
+                            if(searchQuery.length != 0){
+                                await knex.update({name: name, price: price, url: names[i].url, lpmod: time}).where({sku: sku}).from('midAppl');
+                            }
+                            else{
+                                await knex.insert({company_name: 'Midland Appliance', sku: sku, name: name, price: price, url: names[i].url, lpmod: time}).into('midAppl');
+                            }
                         }
-                        else{
-                            await knex.insert({company_name: 'Midland Appliance', sku: sku, name: name, price: price, url: names[i].url, lpmod: time}).into('midAppl');
+                        catch(e){
+                            console.log(e);
                         }                        
                         
                         productNum++;
@@ -234,18 +241,22 @@ async function scrapeProduct(link) {
             // Database Queries
             let name = data[0].name;
             name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
+            
+            try {
+                var searchQuery = await knex.select('sku').from('midAppl').where('sku','=', data[0].sku);
 
-            const searchQuery = await knex.select('sku').from('midAppl').whereRaw('sku = ?', data[0].sku);
+                var time = new Date().toLocaleString();
 
-
-            var time = new Date().toLocaleString();
-
-            if(searchQuery.length != 0){
-                await knex.update({name: name, price: data[0].price, url: URL, lpmod: time}).where({sku: data[0].sku}).from('midAppl');
+                if(searchQuery.length != 0){
+                    await knex.update({name: name, price: data[0].price, url: URL, lpmod: time}).where({sku: data[0].sku}).from('midAppl');
+                }
+                else{
+                    await knex.insert({company_name: 'Midland Appliance', sku: data[0].sku, name: name, price: data[0].price, url: URL, lpmod: time}).into('midAppl');
+                }      
             }
-            else{
-                await knex.insert({company_name: 'Midland Appliance', sku: data[0].sku, name: name, price: data[0].price, url: URL, lpmod: time}).into('midAppl');
-            }            
+            catch(e){
+                console.log(e);
+            }      
 
             productNum++;
             console.log(`Midland Appliance Product: ${productNum}`);

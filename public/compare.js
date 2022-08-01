@@ -25,7 +25,8 @@ const getMatch =  async ()=> {
     var data2 = 'RD14257';
     var sku = 'L';
 
-    var searchQuery3 = await knex.select('*').from('canAppl').where('sku','like', '%'+ sku +'%');
+    // var searchQuery3 = await knex.select('*').from('canAppl').where('sku','like', '%'+ sku +'%');
+    var searchQuery3 = await knex.select('*').from('canAppl').where('sku','=', '$');
       console.log(searchQuery3);
 
     // const result = data2.includes(data1);
@@ -33,5 +34,7 @@ const getMatch =  async ()=> {
 
 }
 
-getPricesFilter('canAppl');
+// getPricesFilter('canAppl');
+
+getMatch();
 

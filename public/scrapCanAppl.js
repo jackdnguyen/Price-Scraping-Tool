@@ -107,16 +107,21 @@ async function scrape(index){
                         let sku = skuArray[skuArray.length-1];      
 
                         //Database Queries
-                        const searchQuery = await knex.select('sku').from('canAppl').whereRaw('sku = ?', sku);
-                        
+                        try {
+                            const searchQuery = await knex.select('sku').from('canAppl').whereRaw('sku','=', sku);
+                            
 
-                        var time = new Date().toLocaleString();
+                            var time = new Date().toLocaleString();
 
-                        if(searchQuery.length != 0){
-                            await knex.update({name: modifiedName, price: price, url: url, lpmod: time}).where({sku: sku}).from('canAppl');
+                                if(searchQuery.length != 0){
+                                    await knex.update({name: modifiedName, price: price, url: url, lpmod: time}).where({sku: sku}).from('canAppl');
+                                }
+                                else{
+                                    await knex.insert({company_name: 'Canadian Appliance', sku: sku, name: modifiedName, price: price, url: url, lpmod: time}).into('canAppl');
+                                }
                         }
-                        else{
-                            await knex.insert({company_name: 'Canadian Appliance', sku: sku, name: modifiedName, price: price, url: url, lpmod: time}).into('canAppl');
+                        catch(e){
+                            console.log(e);
                         }
 
                         results.push(url);
@@ -284,15 +289,21 @@ async function scrapeProduct(link) {
             let name = data[0].name;
             name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
 
-            const searchQuery = await knex.select('sku').from('canAppl').whereRaw('sku = ?', data[0].sku);
+            try{
+                const searchQuery = await knex.select('sku').from('canAppl').whereRaw('sku','=', data[0].sku);
 
-            var time = new Date().toLocaleString();
-            if(searchQuery.length != 0){
-                await knex.update({name: name, price: data[0].price, url: URL, lpmod: time}).where({sku: data[0].sku}).from('canAppl');
+                var time = new Date().toLocaleString();
+                if(searchQuery.length != 0){
+                    await knex.update({name: name, price: data[0].price, url: URL, lpmod: time}).where({sku: data[0].sku}).from('canAppl');
+                }
+                else{
+                    await knex.insert({company_name: 'Canadian Appliance', sku: data[0].sku, name: name, price: data[0].price, url: URL, lpmod: time}).into('canAppl');
+                }
             }
-            else{
-                await knex.insert({company_name: 'Canadian Appliance', sku: data[0].sku, name: name, price: data[0].price, url: URL, lpmod: time}).into('canAppl');
+            catch(e){
+                console.log(e);
             }
+
             
             productNum++;
             console.log(`Canadian Appliance Product: ${productNum}`);
