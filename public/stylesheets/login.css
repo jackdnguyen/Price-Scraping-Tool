@@ -32,10 +32,12 @@
 }
 
 table {
+  /* table-layout: fixed; */
   margin-top: 2rem;
   border: 1px solid black;
 }
 td,th {
   padding: 2rem;
   border: 1px solid black;
+  /* word-wrap: break-word; */
 }

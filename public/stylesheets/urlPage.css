@@ -26,6 +26,10 @@
     font-size: 2rem;
     padding: 3rem;
   }
+
+  #lowerButton {
+    display: block;
+  }
   
 
 @media (min-width: 90rem) {
@@ -79,6 +83,39 @@
     padding-bottom: 2rem;
   }
 
+  /* Fixes table data width in db.ejs */
+  #displayData {
+    width: 90vw;
+  }
+
+  #displayData td, #displayData th{
+    max-width: 12vw;
+  }
+
+  .product-url {
+    word-break: break-all;
+  }
+
+
+  @media (max-width: 90rem)
+  {
+    #displayData {
+      padding: 0;
+      margin: 0;
+      margin-top: 1rem;
+      margin-left: -2rem;
+    }
+
+    #displayData td {
+      margin: 0;
+      padding: 0;
+    }
+
+  }
+
+
+  /* ------------------------ */
+
   input {
     width: 50rem;
     height: 5rem;
@@ -101,6 +138,7 @@
   #lowerButtons{
     display:table;
   }
+
   #lowerButtons > #scraper, #lowerButtons > #progButton {
     display:table-cell;vertical-align:middle;
     padding-right: 1rem;
@@ -112,13 +150,5 @@
   #row{
     display:ruby-base-container;
   }
-  /* #text1 {
-    position: absolute;
-    left: 33vw;
-  } */
-  
-  /* #text2 {
-    position: relative;
-    left: 0;
-  } */
+
   
