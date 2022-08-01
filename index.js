@@ -1,9 +1,12 @@
 const tempEnv = require("dotenv").config();
 const express = require("express");
-const session = require("express-session");
+const session = require("cookie-session");
 const puppeteer = require('puppeteer');
 const { Pool } = require('pg')
 const fs = require('fs');
+const request = require('supertest');
+
+const assert = require('assert');
 var cors = require('cors') //cross-origin resources sharing
 
 var pool = new Pool({
@@ -69,13 +72,13 @@ app.get('/', async (req, res) => {
 app.post("/login", async (req, res) => {
   var un = req.body.f_uname;
   var pwd = req.body.f_pwd;
-
   // var verifyQuery = `SELECT * FROM validusers WHERE uname='${un}' AND password='${pwd}'`
   // var result = await pool.query(verifyQuery)
 
   // if result.rows is !empty
   // valid user
   if (un === "admin" && pwd === "scraper") {
+    
     // valid
     req.session.user = req.body;
     res.redirect("/dashboard");
