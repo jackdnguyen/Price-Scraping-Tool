@@ -1,12 +1,13 @@
 // //terminal commands - npm i chai, npm i chai-http, npm i cors, npm i mocha -g 
 var chai = require("chai");
+let mockSession = require('mock-session')
+var testSession = null;
 const chaiHttp = require("chai-http");
 const { session } = require("passport");
 var server = require("../index");
 var should = chai.should();
 request = require('supertest')
 chai.use(chaiHttp);
-let mockSession = require('mock-session')
 
 describe("login test", function () {
 
@@ -33,6 +34,7 @@ describe("login test", function () {
       .expect('Location', '/')
       .end(done)
   });
+
   it('run logout and see if works', function(done){
     chai.request(server).post('/logout')
     .end(function(error, res){
@@ -46,130 +48,93 @@ describe("login test", function () {
 });
 
 it('dash board shouldnt be run without login', function(done){
-  chai.request(server).post('/dashboard')
-  .end(function(error, res){
-      try{
-          res.should.have.status(200);
-      }
-      catch(error){
-        done()
-      }
-  });
+  request(app)
+      .get("/dashboard")
+      .expect(302)
+      .expect('Location', '/')
+      .end(done)
 });
 
 it('display shouldnt be run without login', function(done){
-  chai.request(server).post('/display')
-  .end(function(error, res){
-      try{
-          res.should.have.status(200);
-      }
-      catch(error){
-        done()
-      }
-  });
+  request(app)
+      .get("/display")
+      .expect(302)
+      .expect('Location', '/')
+      .end(done)
 });
 
 it('display-data shouldnt be run without login', function(done){
-  chai.request(server).post('/display-data')
-  .end(function(error, res){
-      try{
-          res.should.have.status(200);
-      }
-      catch(error){
-        done()
-      }
-  });
+  request(app)
+      .get("/display-data")
+      .expect(302)
+      .expect('Location', '/')
+      .end(done)
 });
 
 it('all shouldnt be run without login', function(done){
-  chai.request(server).post('/all')
-  .end(function(error, res){
-      try{
-          res.should.have.status(200);
-      }
-      catch(error){
-        done()
-      }
-  });
+  request(app)
+      .get("/all")
+      .expect(302)
+      .expect('Location', '/')
+      .end(done)
 });
 
 it('home shouldnt be run without login', function(done){
-  chai.request(server).post('/home')
-  .end(function(error, res){
-      try{
-          res.should.have.status(200);
-      }
-      catch(error){
-        done()
-      }
-  });
+  request(app)
+      .get("/home")
+      .expect(302)
+      .expect('Location', '/')
+      .end(done)
 });
 
 it('canApp shouldnt be run without login', function(done){
-  chai.request(server).post('/canApp')
-  .end(function(error, res){
-      try{
-          res.should.have.status(200);
-      }
-      catch(error){
-        done()
-      }
-  });
+  request(app)
+      .get("/canApp")
+      .expect(302)
+      .expect('Location', '/')
+      .end(done)
 });
 
 it('goemans shouldnt be run without login', function(done){
-  chai.request(server).post('/goemans')
-  .end(function(error, res){
-      try{
-          res.should.have.status(200);
-      }
-      catch(error){
-        done()
-      }
-  });
+  request(app)
+      .get("/goemans")
+      .expect(302)
+      .expect('Location', '/')
+      .end(done)
 });
 
+// it('skuwSearch shouldnt be run without login', function(done){
+//   request(app)
+//       .get("/skuwSearch")
+//       //.send({ Sku_name: "adsasda"})
+//       .expect(302)
+//       .expect('Location', '/')
+//       .end(done)
+// });
+
 it('midAppl shouldnt be run without login', function(done){
-  chai.request(server).post('/midAppl')
-  .end(function(error, res){
-      try{
-          res.should.have.status(200);
-      }
-      catch(error){
-        done()
-      }
-  });
+  request(app)
+      .get("/midAppl")
+      .expect(302)
+      .expect('Location', '/')
+      .end(done)
 });
 
 it('coastAppl shouldnt be run without login', function(done){
-  chai.request(server).post('/coastAppl')
-  .end(function(error, res){
-      try{
-          res.should.have.status(200);
-      }
-      catch(error){
-        done()
-      }
-  });
+  request(app)
+      .get("/coastAppl")
+      .expect(302)
+      .expect('Location', '/')
+      .end(done)
 });
 });
+
 
 // describe("session render test", function () {
+//   beforeEach(function () {
+//     let cookie = mockSession('session', 'bigpete', {"count":1});   
+//   });
 //   it('should delete a single user on post request for /delete/:id', async()=> {
-//     let cookie = mockSession('my-session', 'my-secret', {"count":1});
-//     var res0 = await chai.request(server).get('/getAllUser');
-//     var num_user_before = res0.body.length;
-
-//     const id = 20
-//     //delete user with uid 20
-//     var res2 = await chai.request(server).post('/delete/'+id).set('cookie', [cookie]);
-
-
-//     var res3 = await chai.request(server).get('/getAllUser');
-//     var num_user_after = res3.body.length;
-
-
-//     (num_user_before - num_user_after).should.equal(1)
-//     res3.should.have.status(200)
-// });
+//         var res0 = await request(app).get('/dashboard').expect('Location','/urlPage');
+//   })
 // });

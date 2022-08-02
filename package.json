@@ -22,6 +22,7 @@
     "express-session": "^1.17.3",
     "knex": "^2.2.0",
     "mocha": "^10.0.0",
+    "mock-session": "^0.0.5",
     "passport": "^0.6.0",
     "passport-local": "^1.0.0",
     "pg": "^8.7.3",
@@ -35,6 +36,7 @@
     "got": "^11.8.5",
     "nodemon": "^2.0.19",
     "supertest": "^6.2.4",
+    "supertest-session": "^4.1.0",
     "tape": "^4.15.1"
   },
   "repository": {
