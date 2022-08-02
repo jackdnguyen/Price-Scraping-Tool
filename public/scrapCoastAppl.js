@@ -91,7 +91,7 @@ async function scrape(index){
 
                     //Database Queries
                     try {
-                        const searchQuery = await knex.select('sku').from('coastAppl').whereRaw('sku','=', sku);
+                        const searchQuery = await knex.select('sku').from('coastAppl').where('sku','=', sku);
 
 
                         var time = new Date().toLocaleString();
@@ -292,7 +292,7 @@ async function scrapeIndividual(url){
 
         //Database Queries
         try{
-            const searchQuery = await knex.select('sku').from('coastAppl').whereRaw('sku','=', sku);
+            const searchQuery = await knex.select('sku').from('coastAppl').where('sku','=', sku);
 
 
             var time = new Date().toLocaleString();

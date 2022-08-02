@@ -108,7 +108,7 @@ async function scrape(index){
 
                         //Database Queries
                         try {
-                            const searchQuery = await knex.select('sku').from('canAppl').whereRaw('sku','=', sku);
+                            const searchQuery = await knex.select('sku').from('canAppl').where('sku','=', sku);
                             
 
                             var time = new Date().toLocaleString();
@@ -290,7 +290,7 @@ async function scrapeProduct(link) {
             name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
 
             try{
-                const searchQuery = await knex.select('sku').from('canAppl').whereRaw('sku','=', data[0].sku);
+                const searchQuery = await knex.select('sku').from('canAppl').where('sku','=', data[0].sku);
 
                 var time = new Date().toLocaleString();
                 if(searchQuery.length != 0){

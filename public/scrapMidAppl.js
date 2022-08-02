@@ -71,7 +71,7 @@ async function scrape(index){
 
             
                         try {
-                            const searchQuery = searchQuery = await knex.select('sku').from('midAppl').where('sku','=', sku);
+                            const searchQuery = await knex.select('sku').from('midAppl').where('sku','=', sku);
 
 
                             var time = new Date().toLocaleString();

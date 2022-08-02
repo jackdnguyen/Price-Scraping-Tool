@@ -55,7 +55,7 @@ async function scrape(index){
 
                         //Database Queries
                         try {
-                            const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku ','=', prices[i].sku);
+                            const searchQuery = await knex.select('sku').from('goemans').where('sku ','=', prices[i].sku);
 
 
                             var time = new Date().toLocaleString();
@@ -172,7 +172,6 @@ async function missingProducts(){
                     headless: true,
                     args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
                 });
-                x--;
             }
             await timer(1000);
         }
@@ -234,7 +233,7 @@ async function scrapeProduct(url) {
 
             //Database Queries
             try{
-                const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku','=', obj.sku);
+                const searchQuery = await knex.select('sku').from('goemans').where('sku','=', obj.sku);
 
                 var time = new Date().toLocaleString();
 
