@@ -90,21 +90,16 @@ async function scrape(index){
 
 
                     //Database Queries
-                    try {
-                        const searchQuery = await knex.select('sku').from('coastAppl').where('sku','=', sku);
+                    const searchQuery = await knex.select('sku').from('coastAppl').whereRaw('sku = ?', sku);
 
 
-                        var time = new Date().toLocaleString();
+                    var time = new Date().toLocaleString();
 
-                        if(searchQuery.length != 0){
-                            await knex.update({name: name, price: price, url: urlData, lpmod: time}).where({sku: sku}).from('coastAppl');
-                        }
-                        else{
-                            await knex.insert({company_name: 'Coast Appliances', sku: sku, name: name, price: price, url: urlData, lpmod: time}).into('coastAppl');
-                        }
+                    if(searchQuery.length != 0){
+                        await knex.update({name: name, price: price, url: urlData, lpmod: time}).where({sku: sku}).from('coastAppl');
                     }
-                    catch(e){
-                        console.log(e);
+                    else{
+                        await knex.insert({company_name: 'Coast Appliances', sku: sku, name: name, price: price, url: urlData, lpmod: time}).into('coastAppl');
                     }
 
                 }
@@ -294,21 +289,16 @@ async function scrapeIndividual(url){
 
 
         //Database Queries
-        try{
-            const searchQuery = await knex.select('sku').from('coastAppl').where('sku','=', sku);
+        const searchQuery = await knex.select('sku').from('coastAppl').whereRaw('sku = ?', sku);
 
 
-            var time = new Date().toLocaleString();
+        var time = new Date().toLocaleString();
 
-            if(searchQuery.length != 0){
-                await knex.update({name: name, price: price, url: url, lpmod: time}).where({sku: sku}).from('coastAppl');
-            }
-            else{
-                await knex.insert({company_name: 'Coast Appliances', sku: sku, name: name, price: price, url: url, lpmod: time}).into('coastAppl');
-            }                    
+        if(searchQuery.length != 0){
+            await knex.update({name: name, price: price, url: url, lpmod: time}).where({sku: sku}).from('coastAppl');
         }
-        catch(e){
-            console.log(e);
+        else{
+            await knex.insert({company_name: 'Coast Appliances', sku: sku, name: name, price: price, url: url, lpmod: time}).into('coastAppl');
         }
 
 
