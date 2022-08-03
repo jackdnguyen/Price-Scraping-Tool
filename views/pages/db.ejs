@@ -2,7 +2,7 @@
   <html lang="en-us">
     <head>
       <%- include ("../partials/header.ejs") %>
-      <title>Company's Data</title>
+      <title><%=name%> Data</title>
       <link rel="stylesheet" type="text/css" href="/stylesheets/main.css" />
       <link rel="stylesheet" href="/stylesheets/login.css" />
       <link rel="stylesheet" href="/stylesheets/urlPage.css" />
@@ -27,18 +27,43 @@
 
     <div class="data-container">
       <form action="/company-name" method="POST">
-        <!-- <h2>Canadian Appliance</h2> -->
+        <h1><%=name%></h1>
       </form>
 
-      <!-- <div class='filter'>
-        <form action="skuwSearch" method="post">
-          <input name="Sku_name" id="Sku_name" class="filtersku" onchange="submit" type="text" placeholder="SKU Number" onchange="form.submit()">
-        </form>        
-      </div> -->
+      <div class="flex-item">
+        <div class='filter'>
+          <form action="skuFilter" method="post">
+            <input name="Sku_name" id="Sku_name" type="text" placeholder="SKU Number" onchange="form.submit()">
+          </form>        
+        </div>
+
+        <div class="dropdown">
+          <input class="dropbtn" type="button" value="Sort By:">
+            <div class="dropdown-content">
+              <form action="/all" method="post">
+                <input name="default" id="default" type="button" value="All" onclick="form.submit()">
+              </form>
+              <form action="/low" method="post">
+                <input name="low" id="low" type="button" value="Low" onclick="form.submit()">
+              </form>
+              <form action="/high" method="post">
+                <input name="high" id="high" type="button" value="High" onclick="form.submit()">
+              </form>
+            </div>
+        </form>
+        </div> 
+            
+        <div>
+          <form action="/csv-download" method="post">
+            <input name="csv-download" id="csv-download" type="submit" value="Download" onclick="form.submit()">
+          </form>        
+        </div>
+      </div>
 
       <table id="displayData">
         <tr>
           <th>No.</th>
+          <th>Company's name</th>
           <th>SKU</th>
           <th>Product's Name</th>
           <th>Sales Price</th>
@@ -49,10 +74,11 @@
           <% results.forEach(function(r) { %>
           <tr>
               <td><%=r.id%></td>
+              <td><%=r.company_name%></td>
               <td><%=r.sku%></td>
               <td><%=r.name%></td>
               <td><%=r.price%></td>
-              <td><%=r.url%></td>
+              <td class="product-url"><%=r.url%></td>
               <td><%=r.lpmod%></td>
             </form>
           </tr>

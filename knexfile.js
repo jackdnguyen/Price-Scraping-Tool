@@ -1,17 +1,28 @@
-// Update with your config settings.
 const tempEnv = require("dotenv").config();
-/**
- * @type { Object.<string, import("knex").Knex.Config> }
- */
-module.exports = {
 
+module.exports = {
   development: {
     client: 'pg',
     connection: process.env.DATABASE_URL,
+
+    migrations: {
+      directory: './db/migrations',
+    },
+    seeds: {
+      directory: './seeds/dev',
+    },
   },
 
   production: {
     client: 'pg',
     connection: process.env.DATABASE_URL,
-  }
+
+    migrations: {
+      directory: './db/migrations',
+    },
+    seeds: {
+      directory: './seeds/production'
+    },
+  },
+
 };

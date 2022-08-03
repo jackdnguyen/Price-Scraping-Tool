@@ -1,6 +1,7 @@
 //var fs = require('fs');  
 // var progresBar = scrapeForm.addEventListener('submit', myFunction);
 // var getProfiles = document.getElementsByTagName("select");
+
 var profileArr = ["default","default","default","default", 1];
 var options = ["default", "canAppl", "goemans", "midAppl", "coastAppl"];
 var numRows = 1;

@@ -1,7 +1,6 @@
-require("dotenv").config();
 const puppeteer = require('puppeteer');
-const { Pool } = require('pg')
 const { get } = require('http');
+const knex = require('../knex.js');
 
 var productNum = 0;
 var x = 0;
@@ -16,18 +15,6 @@ var additionalProducts = [];
 
 let browser;
 let browser2;
-
-
-var pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //     rejectUnauthorized: false
-    //   }
-})
-
-const lastmod = new Date().toLocaleString('en-CA', {
-    timeZone: 'America/Los_Angeles',
-  });
 
 const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
 
@@ -98,25 +85,23 @@ async function scrape(index){
                     let urlSplit = urlEl[i].split('products');
                     let urlData = "https://www.coastappliances.ca/products" + urlSplit[1];
                     results.push(urlData);
-                    // console.log(`Product ${productNum} { Name:` + name + ", Price:" + price + ", SKU:" + sku + " }");
-                    // console.log(urlEl[i]);
-                    // console.log("");
-                    productNum++;
-                    //console.log(element[i]);
 
-                    
-                    // Database Queries
-                    var insertQuery = `INSERT INTO coastAppl(sku,name,price,url,lpmod) VALUES('${sku}','${name}',${price},'${urlEl[i]}','${lastmod}')`
-                    var updateQuery = `UPDATE coastAppl SET name='${name}', price=${price}, url='${urlData}', lpmod='${lastmod}' WHERE sku='${sku}'`
-                    var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM coastAppl WHERE sku='${sku}' LIMIT 1)`)
-                    //await pool.query(insertQuery)
-                    if(getDbSku.rows[0].exists)
-                    {
-                        await pool.query(updateQuery)
+                    productNum++;
+
+
+                    //Database Queries
+                    const searchQuery = await knex.select('sku').from('coastAppl').whereRaw('sku = ?', sku);
+
+
+                    var time = new Date().toLocaleString();
+
+                    if(searchQuery.length != 0){
+                        await knex.update({name: name, price: price, url: urlData, lpmod: time}).where({sku: sku}).from('coastAppl');
                     }
                     else{
-                        await pool.query(insertQuery)
+                        await knex.insert({company_name: 'Coast Appliances', sku: sku, name: name, price: price, url: urlData, lpmod: time}).into('coastAppl');
                     }
+
                 }
                 console.log(`Coast Appliance: ${productNum} Products`);
                 // Break if only 1 page
@@ -167,7 +152,6 @@ async function scrapCoastAppl(){
             // Create Object and push into Url Array
             let obj = {
                 url:`${url}`,
-                lastmod:`${lastmod}`,
             }
             urlArray.push(url);
         }
@@ -224,6 +208,9 @@ async function scrapeLoop(collectionIndex){
             console.log("Collection's Scraped Successfully")
             missingProducts(); // Scrapes Missing Products
         } else{ // else re-scrape last collection index
+            if(pageNum == 1){
+                x++;
+            }
             const pages = await browser.pages();
             for(const page of pages) await page.close();
 
@@ -296,24 +283,25 @@ async function scrapeIndividual(url){
         }catch(e){ // Price Doesn't exist
             price = 0;
         }
-        // console.log(price);
-        // console.log(sku);
-        // console.log(name);
-        // console.log(lastmod);
-        // console.log(url);
+
         productNum++;
         console.log(`Coast Appliance: Product ${productNum}`);
-        // Database Queries
-        var insertQuery = `INSERT INTO coastAppl(sku,name,price,url,lpmod) VALUES('${sku}','${name}',${price},'${url}','${lastmod}')`
-        var updateQuery = `UPDATE coastAppl SET name='${name}', price=${price}, url='${url}', lpmod='${lastmod}' WHERE sku='${sku}'`
-        var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM coastAppl WHERE sku='${sku}' LIMIT 1)`)
-        if(getDbSku.rows[0].exists)
-        {
-            await pool.query(updateQuery)
+
+
+        //Database Queries
+        const searchQuery = await knex.select('sku').from('coastAppl').whereRaw('sku = ?', sku);
+
+
+        var time = new Date().toLocaleString();
+
+        if(searchQuery.length != 0){
+            await knex.update({name: name, price: price, url: url, lpmod: time}).where({sku: sku}).from('coastAppl');
         }
         else{
-            await pool.query(insertQuery)
+            await knex.insert({company_name: 'Coast Appliances', sku: sku, name: name, price: price, url: url, lpmod: time}).into('coastAppl');
         }
+
+
         await page.close();
         return true;
     } catch(e){

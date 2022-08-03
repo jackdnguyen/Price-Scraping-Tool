@@ -2,7 +2,7 @@
  * @param { import("knex").Knex } knex
  * @returns { Promise<void> }
  */
- exports.up = function(knex) {
+exports.up = function(knex) {
     return knex.schema
     .createTable('canAppl', function(table) {
         table.increments('id').primary()

@@ -1,11 +1,80 @@
 table {
-  margin-left: 2rem;
+  margin-left: 1vw ;
+}
+
+#displayData {
+  margin-left: 2.5vw;
+  width: 90vw;
+}
+
+#displayData th {
+  text-align: center;
+}
+
+#displayData td{
+  text-align: center;
+}
+
+.product-url {
+  min-width: 40vw;
 }
 
 .filter {
-  margin-left: 2rem;
+  margin-left: 2.5vw;
 }
 
 .data-container {
   margin: 2rem 4rem;
 }
+
+.flex-item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  margin-right: 3rem;
+}
+
+.flex-item input {
+  width: 30rem;
+}
+
+.flex-item div {
+  margin: 0 2rem;
+}
+/* 
+.dropbtn {
+  background-color: #04AA6D;
+  color: white;
+  margin: 0;
+  margin-top: 1rem;
+  padding: 1.5rem;
+  width: 30rem;
+  font-size: 16px;
+  border: solid;
+  border-width: 0.2rem;
+} */
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  z-index: 1;
+}
+
+.dropdown-content input {
+  margin: 0;
+  margin-left: -2rem;
+  border-style: none;
+  text-decoration: none;
+  display: block;
+}
+
+/* .dropdown-content a:hover {background-color: #ddd;} */
+
+.dropdown:hover .dropdown-content {display: block;}
+
+/* .dropdown:hover .dropbtn {background-color: #3e8e41;} */

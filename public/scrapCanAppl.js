@@ -1,14 +1,6 @@
-require("dotenv").config();
 const puppeteer = require('puppeteer');
-const { Pool } = require('pg')
 const { get } = require('http');
-
-var pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    // ssl: {
-    //     rejectUnauthorized: false
-    //   }
-})
+const knex = require('../knex.js');
 
 let browser;
 let browser2;
@@ -26,17 +18,11 @@ var pageFlag = false;
 var pageEnd= 0;
 var flag = true;
 var success = false;
-const lastmod = new Date().toLocaleString('en-CA', {
-    timeZone: 'America/Los_Angeles',
-  });
-// scrape(0);
+
 // Extracts all products from Collections
 async function scrape(index){
     try{
-        // browser = await puppeteer.launch({
-        //     headless: true,
-        //     args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
-        // });
+
         const page = await browser.newPage();
         for(x=index; x<collections.length; x++){
             if(flag == true){ // If no error occured page = 1, else page = page where crashed
@@ -85,10 +71,7 @@ async function scrape(index){
                         pageEnd =pageData[pageData.length-2];
                         pageFlag = true;
                     }
-                    // console.log(pageData);
-                    // console.log(`PAGE END: ${pageEnd}`);
-                    // console.log(name.length);
-                    // console.log(prices.length);
+
                     // #sort_results > div.pi-products > div:nth-child(19) > div.product-tile-price-block > table > tbody > tr > td > div
                     if(name.length != prices.length){
                         let nullPrice = await page.evaluate(() => {
@@ -121,22 +104,21 @@ async function scrape(index){
                         modifiedName = modifiedName.replace(/[^a-z0-9,.\-\" ]/gi, '');
                         let url = skuData[i].url;
                         let price = prices[i].replace(/\$|,/g, '');
-                        let sku = skuArray[skuArray.length-1];       
-                        // console.log(modifiedName);
-                        // console.log(sku);
-                        // console.log(parseFloat(price));
-                        // console.log(url);
-                        var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${sku}','${modifiedName}',${price},'${url}', '${lastmod}')`
-                        var updateQuery = `UPDATE canAppl SET name='${modifiedName}', price=${price}, url='${url}', lpmod='${lastmod}' WHERE sku='${sku}'`
-                        var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM canAppl WHERE sku='${sku}' LIMIT 1)`)
+                        let sku = skuArray[skuArray.length-1];      
 
-                        if(getDbSku.rows[0].exists)
-                        {
-                            await pool.query(updateQuery)
+                        //Database Queries
+                        const searchQuery = await knex.select('sku').from('canAppl').whereRaw('sku = ?', sku);
+                        
+
+                        var time = new Date().toLocaleString();
+
+                        if(searchQuery.length != 0){
+                            await knex.update({name: modifiedName, price: price, url: url, lpmod: time}).where({sku: sku}).from('canAppl');
                         }
                         else{
-                            await pool.query(insertQuery)
+                            await knex.insert({company_name: 'Canadian Appliance', sku: sku, name: modifiedName, price: price, url: url, lpmod: time}).into('canAppl');
                         }
+
                         results.push(url);
                         productNum++;
                     }
@@ -191,10 +173,7 @@ async function scrapCanAppl(){
     } finally {
         console.log("Scraped Canadian Appliance's Sitemap");
         console.log(`Products: ${products.length}`);
-        // for(var i=0; i<products.length;i++){
-        //     console.log(products[i]);
-        //     await timer(1500);
-        // }
+
         browser = await puppeteer.launch({
             headless: true,
             args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
@@ -213,6 +192,9 @@ async function scrapeLoop(collectionIndex){
             console.log("Collection's Scraped Successfully")
             missingProducts(); // Scrapes Missing Products
         } else{ // else re-scrape last collection index
+            if(pageNum == 1){
+                x++;
+            }
             const pages = await browser.pages();
             for(const page of pages) await page.close();
 
@@ -228,6 +210,8 @@ async function scrapeLoop(collectionIndex){
         console.log(e);
     }
 }
+
+
 // Finds the missing products, if result array does not have url's from sitemap
 async function missingProducts(){
     try{
@@ -302,20 +286,20 @@ async function scrapeProduct(link) {
             //Database Queries
             let name = data[0].name;
             name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
-            var insertQuery = `INSERT INTO canAppl(sku,name,price,url,lpmod) VALUES('${data[0].sku}','${name}',${data[0].price},'${URL}', '${lastmod}')`
-            var updateQuery = `UPDATE canAppl SET name='${name}', price=${data[0].price}, url='${URL}', lpmod='${lastmod}' WHERE sku='${data[0].sku}'`
-            var getDbSku = await pool.query(`SELECT exists (SELECT 1 FROM canAppl WHERE sku='${data[0].sku}' LIMIT 1)`)
 
-            if(getDbSku.rows[0].exists)
-            {
-                await pool.query(updateQuery)
+            const searchQuery = await knex.select('sku').from('canAppl').whereRaw('sku = ?', data[0].sku);
+
+            var time = new Date().toLocaleString();
+            if(searchQuery.length != 0){
+                await knex.update({name: name, price: data[0].price, url: URL, lpmod: time}).where({sku: data[0].sku}).from('canAppl');
             }
             else{
-                await pool.query(insertQuery)
+                await knex.insert({company_name: 'Canadian Appliance', sku: data[0].sku, name: name, price: data[0].price, url: URL, lpmod: time}).into('canAppl');
             }
+            
             productNum++;
             console.log(`Canadian Appliance Product: ${productNum}`);
-            // console.log(data)
+
             await page.close()
             return true;
         }
