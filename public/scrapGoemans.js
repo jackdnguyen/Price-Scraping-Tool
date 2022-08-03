@@ -72,6 +72,7 @@ async function scrape(index){
                             console.log(e);
                         }
 
+                        results.push(url[i].toString());
                         productNum++;
                     }
                     console.log(`Goemans Product ${productNum}`);
@@ -164,7 +165,7 @@ async function missingProducts(){
         }
         console.log(`Additional Products to Scrape: ${additionalProducts.length}`);
         for(var x=0;x<additionalProducts.length;x++){ // Scrape Additonal Products
-            var individualScrape = await scrapeProduct(products[x]);
+            var individualScrape = await scrapeProduct(additionalProducts[x]);
             if(individualScrape == false){
                 const pages = await browser2.pages();
                 for(const page of pages) await page.close();
