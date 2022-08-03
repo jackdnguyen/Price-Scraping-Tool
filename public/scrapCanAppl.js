@@ -1,192 +1,129 @@
 const puppeteer = require('puppeteer');
 const { get } = require('http');
 const knex = require('../knex.js');
+const { cp } = require('fs');
 
 let browser;
 let browser2;
 
 const timer = ms => new Promise(res => setTimeout(res, ms)) // Creates a timeout using promise
-
+var collectionSKU = [];
 var results = [];
 var products = [];
+var productsSKU = [];
 var additionalProducts = [];
 
 var productNum = 0;
 var x = 0;
 var pageNum = 1;
-var pageFlag = false;
-var pageEnd= 0;
 var flag = true;
 var success = false;
 
 // Extracts all products from Collections
 async function scrape(index){
     try{
-
         const page = await browser.newPage();
         for(x=index; x<collections.length; x++){
-            if(flag == true){ // If no error occured page = 1, else page = page where crashed
+            if(flag == true){
                 pageNum = 1;
             }
-            pageFlag = false;
             while(true){
                     console.log(`${collections[x]} Page: ${pageNum}`);
-                    page.goto(`${collections[x]}?page=${pageNum}`, { waitUntil: 'domcontentloaded', timeout: 0 }).catch(e =>{
+                    page.goto(`${collections[x]}?page=${pageNum}&features=%7B%7D`, { waitUntil: 'domcontentloaded', timeout: 0 }).catch(e =>{
                         console.log(e);
                     });
 
-                    await page.waitForNavigation("networkidle2").catch(e =>{
-                        console.log(e);
-                    });
-                    // div.pi-products > div > div.product-tile-content-block > div.pi-product-desc-name
-                    let name = await page.evaluate(() => {
-                        return Array.from(document.querySelectorAll("div.pi-products > div > div.product-tile-content-block > div.pi-product-desc-name"), 
-                        el =>  el.textContent);
-                    });
-                    if(name.length == 0){
+                    await page.waitForSelector('#products-list-container');
+
+                    let prices = await page.evaluate(() => {
+                        return Array.from(document.querySelectorAll("#products-list-container .catalogue__list-item"), 
+                        el =>  el = {price: parseFloat(el.getAttribute("data-price")), name: el.getAttribute("data-name"), brand: el.getAttribute("data-brand"), sku: el.getAttribute("data-model-number")});
+                    });  
+
+                    if(prices.length === 0){
                         break;
                     }
-                    let prices = await page.evaluate(() => {
-                        return Array.from(document.querySelectorAll("td.pi-price-final > div > div > a"), 
-                        el =>  el.textContent);
-                    });
-                    if(prices.length == 0){
-                        prices = await page.evaluate(() => {
-                            return Array.from(document.querySelectorAll("td.pi-price-final > div > a"), 
-                            el =>  el.textContent);
-                        });
-                    }
-                    let skuData = await page.evaluate(() => {
-                        return Array.from(document.querySelectorAll("div.product-tile-title-block > h2 > a"), 
-                        el =>  el = {sku:el.textContent, url:el.href});
-                    });
-                    let pageData = await page.evaluate(() => {
-                        return Array.from(document.querySelectorAll("div.pagination > a"), 
-                        el =>  parseInt(el.textContent));
-                    });
-                    if(pageData.length == 0){
-                        pageEnd = 1;
-                        pageFlag = true;
-                    }else if(!pageFlag){
-                        pageEnd =pageData[pageData.length-2];
-                        pageFlag = true;
-                    }
 
-                    // #sort_results > div.pi-products > div:nth-child(19) > div.product-tile-price-block > table > tbody > tr > td > div
-                    if(name.length != prices.length){
-                        let nullPrice = await page.evaluate(() => {
-                            return Array.from(document.querySelectorAll("div.sres_price"), 
-                            el =>  el.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode.getAttribute('data-href'));
-                        });
-                        let urlArray = [];
-                        for(var i=0;i<skuData.length;i++){
-                            urlArray.push(skuData[i].url);
-                        }
-                        for(var j=0;j<nullPrice.length;j++){
-                            let index = urlArray.indexOf(nullPrice[j]);
-                            prices.splice(index,0,'0');
-                        }
-                        if(name.length != prices.length){
-                            let nullPrice2 = await page.evaluate(() => {
-                                return Array.from(document.querySelectorAll("div.product-not-for-sale"), 
-                                el =>  el.parentNode.parentNode.getAttribute('data-href'));
-                            });
-                            for(var j=0;j<nullPrice2.length;j++){
-                                let index = urlArray.indexOf(nullPrice2[j]);
-                                prices.splice(index,0,'0');
-                            }
-                        }
-                        // console.log(nullPrice);  #sort_results > div.pi-products > div:nth-child(27) > div.product-tile-price-block > div.product-not-for-sale
-                    }
-                    for(var i=0; i<name.length;i++){
-                        let skuArray = skuData[i].sku.split(" ");
-                        let modifiedName = skuArray[0] + " " + name[i].replace(/[\r\n]/gm, ' ').trim();  
-                        modifiedName = modifiedName.replace(/[^a-z0-9,.\-\" ]/gi, '');
-                        let url = skuData[i].url;
-                        let price = prices[i].replace(/\$|,/g, '');
-                        let sku = skuArray[skuArray.length-1];      
+                    let url = await page.evaluate(() => {
+                        return Array.from(document.querySelectorAll("#products-list-container > div > div > .catalogue__item-model"), el => el.href);
+                    });   
 
+                    // console.log(prices.length)
+                    for(var i=0; i< prices.length ; i++){
+                        prices[i].name = prices[i].brand + " - " + prices[i].name;
+
+                        prices[i].name = prices[i].name.replace(/[^a-z0-9,.\-\" ]/gi, '')
+                        let skuSplit = url[i].split("/");
+                        let sku = skuSplit[skuSplit.length-1];
                         //Database Queries
-                        try {
-                            const searchQuery = await knex.select('sku').from('canAppl').where('sku','=', sku);
-                            
+                        const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku = ?', prices[i].sku);
 
-                            var time = new Date().toLocaleString();
+                        var time = new Date().toLocaleString();
 
-                                if(searchQuery.length != 0){
-                                    await knex.update({name: modifiedName, price: price, url: url, lpmod: time}).where({sku: sku}).from('canAppl');
-                                }
-                                else{
-                                    await knex.insert({company_name: 'Canadian Appliance', sku: sku, name: modifiedName, price: price, url: url, lpmod: time}).into('canAppl');
-                                }
+                        if(searchQuery.length != 0){
+                            await knex.update({name: prices[i].name, price: prices[i].price, url: url[i], lpmod: time}).where({sku: prices[i].sku}).from('goemans');
                         }
-                        catch(e){
-                            console.log(e);
+                        else{
+                            await knex.insert({company_name: 'Goemans', sku: prices[i].sku, name: prices[i].name, price: prices[i].price, url: url[i], lpmod: time}).into('goemans');
                         }
-
-                        results.push(url);
+                        results.push(url[i].toString());
+                        collectionSKU.push(sku);
                         productNum++;
                     }
-                    console.log(`Canadian Appliance Product: ${productNum}`);
+                    console.log(`Goemans Product ${productNum}`);
+                    pageNum++;
                     flag = true;
                     await timer(1400);
-                    if(pageNum == pageEnd){
-                        break;
-                    }
-                    pageNum++;
             }
         }
         browser.close();
         return true;
     }catch(e){
         console.log(e); // Timed Out
-        flag = false; // Saves page num
         console.log(x);
+        flag = false;
         return false;
     }
 }
 // 11931 Products in Collections 7/20/2021
-// sitemap();
+
 // Scrapes All Product Url's from Sitemap 
-async function scrapCanAppl(){
+async function scrapGoemans(){
     try{
         const browserSiteMap = await puppeteer.launch({headless:true, args: ['--no-sandbox']});
         const page = await browserSiteMap.newPage();
-        for(var i=1; i<4; i++){
-            page.goto(`https://www.canadianappliance.ca/sitemaps/sitemap-${i}.xml`);
-            page.setDefaultNavigationTimeout(0); // Sets navigation limit to inf
-            await page.waitForNavigation({ // Wait until network is idle
-                waitUntil: 'networkidle0',
-            });
-            let element = await page.evaluate(() => {
-                // Selects all products in the container, el=>el.textContent makes each element textContent of product data
-                return Array.from(document.querySelectorAll(".pretty-print .folder .folder .opened div:nth-child(2) span:nth-child(2)"), el => el.textContent);
-            });
-            for(var i=0; i<element.length; i++){
-                const urlSplit = element[i].split(".");
-                if(urlSplit[urlSplit.length-1] == 'html'){
-                    if(!element[i].includes("Reviews") && !element[i].includes("fr-CA")){
-                        products.push(element[i]);
-                        //fr-CA
-                    }
-                }
+        page.goto('https://www.goemans.com/sitemap.xml');
+        page.setDefaultNavigationTimeout(0); // Sets navigation limit to inf
+        await page.waitForNavigation({ // Wait until network is idle
+            waitUntil: 'networkidle0',
+        });
+        let element = await page.evaluate(() => {
+            // Selects all products in the container, el=>el.textContent makes each element textContent of product data
+            return Array.from(document.querySelectorAll(".pretty-print .folder .folder .opened div:nth-child(2) span:nth-child(2)"), el => el.textContent);
+        });
+        for(var i=0; i<element.length; i++){
+            const urlSplit = element[i].split("/");
+            const sku = urlSplit[urlSplit.length-1]
+            if(sku != ''){ // If URL is a product push into products
+                products.push(element[i]);
+                productsSKU.push(sku);
             }
         }
         browserSiteMap.close();
     }catch(e){
         console.log(e);
     } finally {
-        console.log("Scraped Canadian Appliance's Sitemap");
+        console.log("Scraped Goeman's Sitemap");
         console.log(`Products: ${products.length}`);
-
         browser = await puppeteer.launch({
             headless: true,
             args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
           });
         scrapeLoop(0); // Runs ScrapeLoop
+        // checkCount();
     }
 }
-// sitemap();
+// scrapGoemans();
 
 async function scrapeLoop(collectionIndex){
     try{
@@ -197,6 +134,9 @@ async function scrapeLoop(collectionIndex){
             console.log("Collection's Scraped Successfully")
             missingProducts(); // Scrapes Missing Products
         } else{ // else re-scrape last collection index
+            if(pageNum == 1){
+                x++;
+            }
             const pages = await browser.pages();
             for(const page of pages) await page.close();
 
@@ -205,7 +145,7 @@ async function scrapeLoop(collectionIndex){
                 args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
             });
             await timer(4000);
-            console.log("Something went wrong, Resuming");
+            console.log("Goemans: Something went wrong, Resuming");
             scrapeLoop(x);
         }
     } catch(e){
@@ -213,137 +153,200 @@ async function scrapeLoop(collectionIndex){
     }
 }
 
-
 // Finds the missing products, if result array does not have url's from sitemap
 async function missingProducts(){
     try{
         browser2 = await puppeteer.launch({headless: true, args: ['--no-sandbox']}); // Launch New Browser for additional products
         for(var i=0; i<products.length;i++){
             if(results.includes(products[i]) == false){ // If results does not have product, push into additionalProducts Array
-                additionalProducts.push(products[i]);
+                if(collectionSKU.includes(productsSKU[i]) == false){
+                    additionalProducts.push(products[i]);
+                }
             }
         }
         console.log(`Additional Products to Scrape: ${additionalProducts.length}`);
         for(var x=0;x<additionalProducts.length;x++){ // Scrape Additonal Products
-            let individualScrape = await scrapeProduct(additionalProducts[x]);
-            if(individualScrape == false){
-                const pages = await browser2.pages();
-                for(const page of pages) await page.close();
-                browser2 = await puppeteer.launch({
-                    headless: true,
-                    args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
-                });
-            }
-            await timer(1000);
+            scrapeProduct(additionalProducts[x]);
+            await timer(1600);
         }
+        await timer(20000);
+        const pages = await browser2.pages();
+        for(const page of pages) await page.close();
         await browser2?.close();
-        get("http://localhost:5000/canApplSuccess");
-        console.log("Canadian Appliance Scraped Successfully.");
+        get("http://localhost:5000/goemanSuccess");
     }catch(e){
         console.log(e);
     }
 }
-
-async function scrapeProduct(link) {  
-    try {
-        const URL = link
-        const page = await browser2.newPage()
-
-        await page.goto(URL, { 
-            waitUntil: 'domcontentloaded',
-            timeout: 0})
-
-        await page.setRequestInterception(true)
-        page.on('request', (request)=>{
-            if (request.resourceType() == 'image' || request.resourceType() == 'stylesheet' || request.resourceType() == 'font' || request.resourceType() == 'script')
-                request.abort()
-            else
-                request.continue()
-        })
-
-        let data = await page.evaluate(() => {
-            if(document.querySelector('.pd-brand [itemprop="name"]') == null)
-                return
-            else {
-                let results = []
-                let tempPrice = 0
-
-                if(document.querySelector('[itemprop=price]') != null){ 
-                    tempPrice = document.querySelector('[itemprop=price]').textContent
-                    tempPrice = parseFloat(tempPrice.slice(1, tempPrice.length-4).replace(',' , ''))
-                }
-                    results.push({
-                        name: document.querySelector('.pd-brand [itemprop="name"]').content,
-                        sku: document.querySelector('[itemprop="sku"]').content,
-                        price: tempPrice,
-                    })
-                    return results
-            }
-        })
-        if(data == null) {
-            // console.log(index)
-            await page.close()
+// Scrapes Singular Product Item
+async function scrapeProduct(url) {
+    try{
+        browser2 = await puppeteer.launch({headless: true, args: ['--no-sandbox']}); // Launch New Browser for additional products
+        let substring = "packages";
+        if(url.indexOf(substring) !== -1){
+            return;
+        }
+        const urlSplit = url.split("/");
+        const sku = urlSplit[urlSplit.length-1]
+        // Set-up return object
+        var obj = {
+            name:'',
+            sku:`${sku}`,
+            url:`${url}`,
+            lastmod:`${new Date().toISOString().slice(0, 10)}`,
+            price:''
+        };
+        const page = await browser2.newPage();
+        await page.setRequestInterception(true);
+        page.on('request', (req) => {
+        if(req.resourceType() == 'stylesheet' || req.resourceType() == 'font' || req.resourceType() == 'image'){
+            req.abort();
         }
         else {
-            //Database Queries
-            let name = data[0].name;
-            name = name.replace(/[^a-z0-9,.\-\" ]/gi, '');
-
-            try{
-                const searchQuery = await knex.select('sku').from('canAppl').where('sku','=', data[0].sku);
-
-                var time = new Date().toLocaleString();
-                if(searchQuery.length != 0){
-                    await knex.update({name: name, price: data[0].price, url: URL, lpmod: time}).where({sku: data[0].sku}).from('canAppl');
-                }
-                else{
-                    await knex.insert({company_name: 'Canadian Appliance', sku: data[0].sku, name: name, price: data[0].price, url: URL, lpmod: time}).into('canAppl');
-                }
-            }
-            catch(e){
-                console.log(e);
-            }
-
-            
-            productNum++;
-            console.log(`Canadian Appliance Product: ${productNum}`);
-
-            await page.close()
-            return true;
+            req.continue();
         }
-    } 
-    catch (error) {
-            console.error(error)
+        });
+        page.goto(url, {
+            waitUntil: 'domcontentloaded'
+            //remove timout
+            // timeout: 0
+        }).catch(e =>{
+            console.log(e);
             return false;
+        });
+        process.setMaxListeners(Infinity); // Sets Max Listeners to Inf
+            // Extract Product Name
+            await page.waitForXPath('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
+            const [el3] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/h2');
+            const txt3 = await el3.getProperty('innerText');
+            const rawTxt3 = await txt3.jsonValue();
+            obj.name = rawTxt3;
+            try{
+                // Extract Price
+                const [el] = await page.$x('/html/body/div[3]/div/div[2]/div[3]/div[2]/div[2]/dl[2]/dd');
+                const txt = await el.getProperty('innerText');
+                const rawTxt = await txt.jsonValue();
+                let text = rawTxt.replace(/\$|,/g,''); // Turn price into integer value
+                obj.price = parseFloat(text);
+            }catch(e){ // Price Doesn't exist
+                obj.price = 0;
+            }
+            obj.name = obj.name.replace(/[^a-z0-9,.\-\" ]/gi, '');
+
+            //Database Queries
+            const searchQuery = await knex.select('sku').from('goemans').whereRaw('sku = ?', obj.sku);
+
+
+            var time = new Date().toLocaleString();
+
+            if(searchQuery.length != 0){
+                await knex.update({name: obj.name, price: obj.price, url: url, lpmod: time}).where({sku: obj.sku}).from('goemans');
+            }
+            else{
+                await knex.insert({company_name: 'Goemans', sku: obj.sku, name: obj.name, price: obj.price, url: url, lpmod: time}).into('goemans');
+            }
+
+            productNum++;
+            console.log(`Goemans Product: ${productNum}`);
+            await page.close();
+            return true;
+    }catch(e){
+        productNum--;
+        console.log(e);
+        return false;
     }
 }
 
-function canApplCounter(){
+function goemansCount(){
     return productNum;
 }
 
-module.exports = {scrapCanAppl, canApplCounter};
+module.exports = { scrapGoemans, goemansCount };
 
 const collections = [
-    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/French-Door-Refrigerators-48/',
-    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/Side-by-Side-Refrigerators-46/',
-    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/Bottom-Mount-Refrigerators-45/',
-    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/Top-Mount-Refrigerators-44/',
-    'https://www.canadianappliance.ca/Built-In/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/',
-    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Full-Size-Refrigerators-38/All-Refrigerator-50/',
-    'https://www.canadianappliance.ca/Refrigerators-And-Fridges-3/Compact-Refrigeration-40/',
-    'https://www.canadianappliance.ca/Freezers-42/',
-    'https://www.canadianappliance.ca/Cooktops-and-Stove-Tops-17/',
-    'https://www.canadianappliance.ca/Wall-Ovens-19/',
-    'https://www.canadianappliance.ca/Microwave-Ovens-20/',
-    'https://www.canadianappliance.ca/Wall-Ovens-19/Microwave-Wall-Ovens-32/',
-    'https://www.canadianappliance.ca/Under-Cabinet/Ventilation-Range-Hoods-18/',
-    'https://www.canadianappliance.ca/Ventilation-Range-Hoods-18/',
-    'https://www.canadianappliance.ca/Dishwashers-4/',
-    'https://www.canadianappliance.ca/Washers-And-Washing-Machines-66/',
-    'https://www.canadianappliance.ca/Washers-And-Washing-Machines-66/Washer-and-Dryer-Sets-215/',
-    'https://www.canadianappliance.ca/Product-Accessories-232/Laundry-Accessories-92/',
-    'https://www.canadianappliance.ca/Dryers-67/',
-    'https://www.canadianappliance.ca/BBQ-Grills-7/',
-    'https://www.canadianappliance.ca/Product-Accessories-232/BBQ-Accessories-252/',
+    'https://www.goemans.com/home/kitchen/cooking/range/gas/', 
+    'https://www.goemans.com/home/kitchen/cooking/range/electric/', 
+    'https://www.goemans.com/home/kitchen/cooking/range/induction/',
+    'https://www.goemans.com/home/kitchen/cooking/range/dual-fuel/',
+    'https://www.goemans.com/home/kitchen/cooking/cooktop/gas/',
+    'https://www.goemans.com/home/kitchen/cooking/cooktop/electric/',
+    'https://www.goemans.com/home/kitchen/cooking/cooktop/induction/',
+    'https://www.goemans.com/home/kitchen/cooking/oven/electric/',
+    'https://www.goemans.com/home/kitchen/cooking/oven/steam/',
+    'https://www.goemans.com/home/kitchen/cooking/ventilation/wall-mount/',
+    'https://www.goemans.com/home/kitchen/cooking/ventilation/island-chimney/',
+    'https://www.goemans.com/home/kitchen/cooking/ventilation/downdraft/',
+    'https://www.goemans.com/home/kitchen/cooking/ventilation/blower/',
+    'https://www.goemans.com/home/kitchen/cooking/ventilation/hood-inserts/',
+    'https://www.goemans.com/home/kitchen/cooking/ventilation/under-cabinet-hood/',
+    'https://www.goemans.com/home/kitchen/cooking/microwave/counter-top/',
+    'https://www.goemans.com/home/kitchen/cooking/microwave/over-the-range/',
+    'https://www.goemans.com/home/kitchen/cooking/microwave/drawer/',
+    'https://www.goemans.com/home/kitchen/cooking/microwave/built-in/',
+    'https://www.goemans.com/home/kitchen/cooking/small-appliances/specialty-products-cookware/',
+    'https://www.goemans.com/home/kitchen/cooking/warming-drawer/warming-drawer/',
+    'https://www.goemans.com/home/kitchen/cooking/cookware-bakeware/cookware/',
+    'https://www.goemans.com/home/kitchen/cooking/cooking-accessories/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/french-door/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/side-by-side/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/bottom-mount/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/top-mount/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/built-in/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/column/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/under-counter/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/wine-cooler/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/wine-reserve/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/free-standing/',
+    'https://www.goemans.com/home/kitchen/refrigeration/fridges/counter-depth/',
+    'https://www.goemans.com/home/kitchen/refrigeration/freezer/chest/',
+    'https://www.goemans.com/home/kitchen/refrigeration/freezer/frost-free-upright/',
+    'https://www.goemans.com/home/kitchen/refrigeration/freezer/manual-defrost-upright/',
+    'https://www.goemans.com/home/kitchen/refrigeration/freezer/column/',
+    'https://www.goemans.com/home/kitchen/refrigeration/freezer/ice-maker/',
+    'https://www.goemans.com/home/kitchen/refrigeration/refrigeration-accessories/',
+    'https://www.goemans.com/home/kitchen/dishwasher/front-control/',
+    'https://www.goemans.com/home/kitchen/dishwasher/top-control/',
+    'https://www.goemans.com/home/kitchen/dishwasher/integrated-panel/',
+    'https://www.goemans.com/home/kitchen/dishwasher/drawer/',
+    'https://www.goemans.com/home/kitchen/dishwasher/portable/',
+    'https://www.goemans.com/home/kitchen/dishwasher/dishwasher-accessories/',
+    'https://www.goemans.com/home/laundry/washer/top-load/',
+    'https://www.goemans.com/home/laundry/washer/front-load/',
+    'https://www.goemans.com/home/laundry/dryer/gas/',
+    'https://www.goemans.com/home/laundry/dryer/electric/',
+    'https://www.goemans.com/home/laundry/dryer/steam-closet/',
+    'https://www.goemans.com/home/laundry/washerdryer-combo/',
+    'https://www.goemans.com/home/laundry/pedestals/',
+    'https://www.goemans.com/home/laundry/laundry-accessories/',
+    'https://www.goemans.com/home/kitchen/outdoor/freestanding-grills/natural-gas/',
+    'https://www.goemans.com/home/kitchen/outdoor/freestanding-grills/propane/',
+    'https://www.goemans.com/home/kitchen/outdoor/freestanding-grills/charcoal-pellet/',
+    'https://www.goemans.com/home/kitchen/outdoor/outdoor-kitchens/natural-gas-built-in/',
+    'https://www.goemans.com/home/kitchen/outdoor/outdoor-kitchens/propane-built-in/',
+    'https://www.goemans.com/home/kitchen/outdoor/outdoor-kitchens/outdoor-kitchen-components/',
+    'https://www.goemans.com/home/kitchen/outdoor/outdoor-kitchens/outdoor-refrigeration/',
+    'https://www.goemans.com/home/kitchen/outdoor/outdoor-kitchens/patio-heater/',
+    'https://www.goemans.com/home/kitchen/outdoor/outdoor-kitchens/pizza-oven/',
+    'https://www.goemans.com/home/kitchen/outdoor/outdoor-accessories/',
+    'https://www.goemans.com/home/kitchen/home-essentials/specialty-products-cookware/',
+    'https://www.goemans.com/home/kitchen/home-essentials/counter-top-appliances/',
+    'https://www.goemans.com/home/kitchen/home-essentials/vacuums/',
+    'https://www.goemans.com/home/kitchen/home-essentials/coffee/built-in/',
+    'https://www.goemans.com/home/kitchen/home-essentials/coffee/free-standing-coffee/',
+    'https://www.goemans.com/home/kitchen/accessories/bbq/bbq-accessories/',
+    'https://www.goemans.com/home/kitchen/accessories/bbq/bbq-and-fireplace-parts/',
+    'https://www.goemans.com/home/kitchen/accessories/bbq/built-in/',
+    'https://www.goemans.com/home/kitchen/accessories/cooking/range/',
+    'https://www.goemans.com/home/kitchen/accessories/cooking/oven/',
+    'https://www.goemans.com/home/kitchen/accessories/cooking/microwave/',
+    'https://www.goemans.com/home/kitchen/accessories/cooking/cooktop/',
+    'https://www.goemans.com/home/kitchen/accessories/cooking/pizza-oven/',
+    'https://www.goemans.com/home/kitchen/accessories/cooking/coffee/',
+    'https://www.goemans.com/home/kitchen/accessories/refrigeration/freestanding-fridge/',
+    'https://www.goemans.com/home/kitchen/accessories/refrigeration/under-counter/',
+    'https://www.goemans.com/home/kitchen/accessories/refrigeration/filters/',
+    'https://www.goemans.com/home/kitchen/accessories/refrigeration/refrigeration-built-in/',
+    'https://www.goemans.com/home/kitchen/accessories/ventilation/',
+    'https://www.goemans.com/home/kitchen/accessories/laundry/washerdryer/',
+    'https://www.goemans.com/home/kitchen/accessories/dishwasher/'
 ];

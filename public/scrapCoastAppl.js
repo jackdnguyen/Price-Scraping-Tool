@@ -213,6 +213,9 @@ async function scrapeLoop(collectionIndex){
             console.log("Collection's Scraped Successfully")
             missingProducts(); // Scrapes Missing Products
         } else{ // else re-scrape last collection index
+            if(pageNum == 1){
+                x++;
+            }
             const pages = await browser.pages();
             for(const page of pages) await page.close();
 
