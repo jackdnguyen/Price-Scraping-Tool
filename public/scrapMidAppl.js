@@ -20,12 +20,8 @@ var success = false;
 // Extracts all products from Collections
 async function scrape(index){
     try{
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
-          });
         const page = await browser.newPage();
-        for(x=0; x<collections.length; x++){
+        for(x=index; x<collections.length; x++){
             if(flag == true){ // If no error occured page = 1, else page = page where crashed
                 pageNum = 1;
             }
@@ -39,22 +35,25 @@ async function scrape(index){
                     await page.waitForNavigation("networkidle2").catch(e =>{
                         console.log(e);
                     });
-                    let prices = await page.evaluate(() => {      
-                        return Array.from(document.querySelectorAll("#__next > div.jss1.jss2 > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root.avb-typography.jss161.MuiGrid-container > div > div > article > div.jss171 > div.MuiBox-root > div:nth-child(3) > strong"),
+                                                                    // #__next > div.jss1.jss8 > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root.avb-typography.jss167.MuiGrid-container > div:nth-child(1) > div > article > div.jss177 > div.MuiBox-root.jss221.MuiGrid-root.MuiGrid-container > div.MuiBox-root.jss226.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12 > strong
+                    let prices = await page.evaluate(() => {        
+                        return Array.from(document.querySelectorAll("#__next > div:nth-child(4) > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root > div > div > article > div:nth-last-child(2) > div.MuiBox-root > div:nth-child(3) > strong"),
                         el => el.textContent);
                     });
                     if(prices.length == 0){
                         break;
                     }  
                     let skuArray = await page.evaluate(() => {       
-                        return Array.from(document.querySelectorAll("#__next > div.jss1.jss2 > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root.avb-typography.jss161.MuiGrid-container > div > div > article > div.jss171 > span"),
+                        return Array.from(document.querySelectorAll("#__next > div:nth-child(4) > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root > div > div > article > div:nth-last-child(2) > span"),
                         el => el.textContent);
                     });  
                     let names = await page.evaluate(() => {       
-                        return Array.from(document.querySelectorAll("#__next > div.jss1.jss2 > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root.avb-typography.jss161.MuiGrid-container > div > div > article > div.jss171 > h3 > a"),
+                        return Array.from(document.querySelectorAll("#__next > div:nth-child(4) > div > div:nth-child(5) > div > div > div.MuiGrid-root.MuiGrid-item.MuiGrid-grid-xs-12.MuiGrid-grid-md-9 > div.MuiGrid-root > div > div > article > div:nth-last-child(2) > h3 > a"),
                         el => el = {name: el.textContent, url: el.href});
                     });  
-
+                    // console.log(prices.length);
+                    // console.log(skuArray.length);
+                    // console.log(names.length)
                     for(var i=0; i< prices.length ; i++){
                         let skuSplit = skuArray[i].split(":");
                         let sku = skuSplit[skuSplit.length-1].trim();
@@ -122,7 +121,7 @@ async function scrapMidAppl(){
         console.log(e);
     } finally {
         console.log("Scraped Midland Appliance's Sitemap");
-        console.log(`Products: ${products.length}`);
+        console.log(`Midland Products: ${products.length}`);
         browser = await puppeteer.launch({
             headless: true,
             args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
