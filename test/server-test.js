@@ -103,15 +103,6 @@ it('goemans shouldnt be run without login', function(done){
       .end(done)
 });
 
-// it('skuwSearch shouldnt be run without login', function(done){
-//   request(app)
-//       .get("/skuwSearch")
-//       //.send({ Sku_name: "adsasda"})
-//       .expect(302)
-//       .expect('Location', '/')
-//       .end(done)
-// });
-
 it('midAppl shouldnt be run without login', function(done){
   request(app)
       .get("/midAppl")
@@ -128,13 +119,3 @@ it('coastAppl shouldnt be run without login', function(done){
       .end(done)
 });
 });
-
-
-// describe("session render test", function () {
-//   beforeEach(function () {
-//     let cookie = mockSession('session', 'bigpete', {"count":1});   
-//   });
-//   it('should delete a single user on post request for /delete/:id', async()=> {
-//         var res0 = await request(app).get('/dashboard').expect('Location','/urlPage');
-//   })
-// });
