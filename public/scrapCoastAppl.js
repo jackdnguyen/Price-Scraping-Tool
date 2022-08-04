@@ -22,7 +22,7 @@ async function scrape(index){
     try{
         const page = await browser.newPage();
         // For each collection in coast appliances
-        for(x=urlArray.length-1; x< urlArray.length; x++){
+        for(x=index; x< urlArray.length; x++){
             let url = urlArray[x];
             if(flag == true){ // If no error occured page = 1, else page = page where crashed
                 pageNum = 1;
