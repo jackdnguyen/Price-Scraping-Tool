@@ -76,7 +76,6 @@ async function scrape(index){
                     await timer(1400);
             }
         }
-        browser.close();
         return true;
     }catch(e){
         console.log(e); // Timed Out
@@ -166,10 +165,18 @@ async function missingProducts(){
         }
         console.log(`Additional Products to Scrape: ${additionalProducts.length}`);
         for(var x=0;x<additionalProducts.length;x++){ // Scrape Additonal Products
-            scrapeProduct(additionalProducts[x]);
-            await timer(1600);
+            var individualScrape = await scrapeProduct(additionalProducts[x]);
+            if(individualScrape == false){
+                const pages = await browser2.pages();
+                for(const page of pages) await page.close();
+                browser2 = await puppeteer.launch({
+                    headless: true,
+                    args: ['--no-sandbox'] // '--single-process', '--no-zygote', 
+                });
+            }
+            await timer(1000);
         }
-        await timer(20000);
+        await timer(5000);
         const pages = await browser2.pages();
         for(const page of pages) await page.close();
         await browser2?.close();
@@ -178,13 +185,14 @@ async function missingProducts(){
         console.log(e);
     }
 }
+
 // Scrapes Singular Product Item
 async function scrapeProduct(url) {
     try{
         browser2 = await puppeteer.launch({headless: true, args: ['--no-sandbox']}); // Launch New Browser for additional products
         let substring = "packages";
         if(url.indexOf(substring) !== -1){
-            return;
+            return true;
         }
         const urlSplit = url.split("/");
         const sku = urlSplit[urlSplit.length-1]
