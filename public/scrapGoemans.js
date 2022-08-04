@@ -189,7 +189,6 @@ async function missingProducts(){
 // Scrapes Singular Product Item
 async function scrapeProduct(url) {
     try{
-        browser2 = await puppeteer.launch({headless: true, args: ['--no-sandbox']}); // Launch New Browser for additional products
         let substring = "packages";
         if(url.indexOf(substring) !== -1){
             return true;
