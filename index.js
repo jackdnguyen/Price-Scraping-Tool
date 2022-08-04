@@ -468,6 +468,15 @@ const getPricesFilter = async (tableName)=>{
           .andOn(tableName +'.price','>', 'coastAppl.price')
   })
 
+  low.sort((a, b)=>{
+    return (a.id)-(b.id);
+  })
+
+  high.sort((a, b)=>{
+    return (a.id)-(b.id);
+  })
+
+
   var data = {low: low, high: high};
 
   return data;
