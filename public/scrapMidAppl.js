@@ -87,7 +87,6 @@ async function scrape(index){
                     await timer(1400);
             }
         }
-        browser.close();
         return true;
     }catch(e){
         console.log(e); // Timed Out
