@@ -2,7 +2,7 @@
 
 \
 \
-\
+--
 
 # THINGS NEED TO BE INSTALLED
 NodeJS \
