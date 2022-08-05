@@ -1,7 +1,11 @@
 # START-UP GUIDE
 
+\
+\
+\
+
 # THINGS NEED TO BE INSTALLED
-NodeJS
+NodeJS \
 PostgreSQL
 
 # AFTER INSTALLATION
@@ -22,14 +26,15 @@ Jack Nguyen  \
 Tosrif Jahan Sakib \
 Sameer Ali  \
 Melody Shih  \
-Daniel Vuksan \
+Daniel Vuksan 
 
+# ---------------------------------------------------------
 
 <!-- --------------------------------------------------------------------- -->
 
 Price Scraping Tool \
 Requirements and Specification Document \
-08/03/2022, version 3 \
+08/03/2022, version 3 
 
 # Project Abstract
 
