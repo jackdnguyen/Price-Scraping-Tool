@@ -1,8 +1,4 @@
-# START-UP GUIDE
-
-\
-\
---
+# START-UP GUIDE /
 
 # THINGS NEED TO BE INSTALLED
 NodeJS \
