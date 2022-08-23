@@ -18,7 +18,7 @@ PostgreSQL
 
 <!-- ---------------------------------------------------------------------- -->
 
-# Group 4
+# Team
 
 Jack Nguyen  \
 Tosrif Jahan Sakib \
